@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "947221119678",
+    "project_id": "nyam-makaan",
+    "storage_bucket": "nyam-makaan.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:947221119678:android:491f0c395e2454e2f954ef",
+        "android_client_info": {
+          "package_name": "com.example.nyam_makaaan2"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "947221119678-0glqdp073gpsi327050bv33q513v45d1.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.nyam_makaaan2",
+            "certificate_hash": "af0e87a8b2d23b13f012bf6fab2ec244bad46422"
+          }
+        },
+        {
+          "client_id": "947221119678-k0qu6bpnklped3s3vlgccevj2rf6f7ve.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAAXZOFTGp9X23tG2gM_tbdiqT4l8S-vhw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "947221119678-k0qu6bpnklped3s3vlgccevj2rf6f7ve.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
