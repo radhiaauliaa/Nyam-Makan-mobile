@@ -37,7 +37,7 @@ class Menu {
     required this.createdAt,
     required this.updatedAt,
   });
-
+ 
   factory Menu.fromMap(Map<String, dynamic> map) {
     return Menu(
       id: map['id'] ?? '',
