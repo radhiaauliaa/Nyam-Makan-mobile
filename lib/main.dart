@@ -12,10 +12,17 @@ import 'providers/notification_provider.dart';
 import 'providers/promo_provider.dart';
 import 'providers/location_provider.dart';
 import 'services/fcm_service.dart';
-
+import 'firebase_options.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
+ 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  await FirebaseAppCheck.instance.activate(
+    androidProvider: AndroidProvider.debug,
+  );
   await FCMService.initialize();
 
   runApp(const MyApp());

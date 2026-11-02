@@ -15,7 +15,7 @@ class UserModel {
   final DateTime createdAt;
   final DateTime? updatedAt;
 
-  UserModel({
+  UserModel({ 
     required this.id,
     required this.username,
     required this.email,

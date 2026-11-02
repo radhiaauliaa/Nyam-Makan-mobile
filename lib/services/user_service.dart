@@ -18,7 +18,7 @@ class UserService {
     } catch (e) {
       throw Exception('Gagal mengambil data users: $e');
     }
-  }
+  } 
 
   // Get user by ID
   Future<UserModel?> getUserById(String id) async {
