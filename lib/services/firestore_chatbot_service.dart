@@ -1,4 +1,3 @@
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -42,9 +41,7 @@ class FirestoreChatbotService {
         'rekomendasi',
         'tempat makan',
       ])) {
-        contexts.add(
-          await _getMenuAndRestaurantContext(question),
-        );
+        contexts.add(await _getMenuAndRestaurantContext(question));
       }
 
       // 2. Promo.
@@ -68,9 +65,7 @@ class FirestoreChatbotService {
         'komentar',
         'pendapat',
       ])) {
-        contexts.add(
-          await _getReviewContext(question),
-        );
+        contexts.add(await _getReviewContext(question));
       }
 
       // 4. Reservasi milik pengguna.
@@ -86,9 +81,7 @@ class FirestoreChatbotService {
         'reservasi saya',
         'riwayat reservasi',
       ])) {
-        contexts.add(
-          await _getReservationContext(user.uid),
-        );
+        contexts.add(await _getReservationContext(user.uid));
       }
 
       // 5. Notifikasi milik pengguna.
@@ -98,9 +91,7 @@ class FirestoreChatbotService {
         'pemberitahuan',
         'pesan masuk',
       ])) {
-        contexts.add(
-          await _getNotificationContext(user.uid),
-        );
+        contexts.add(await _getNotificationContext(user.uid));
       }
 
       // 6. Profil pengguna sendiri.
@@ -113,29 +104,21 @@ class FirestoreChatbotService {
         'jumlah ulasan saya',
         'jumlah favorit saya',
       ])) {
-        contexts.add(
-          await _getUserContext(user.uid),
-        );
+        contexts.add(await _getUserContext(user.uid));
       }
 
       // 7. Pertanyaan umum.
       // Jika tidak ada kategori yang terdeteksi,
       // tampilkan data publik menu, restoran, dan promo.
       if (contexts.isEmpty) {
-        contexts.add(
-          await _getMenuAndRestaurantContext(question),
-        );
+        contexts.add(await _getMenuAndRestaurantContext(question));
 
-        contexts.add(
-          await _getPromoContext(),
-        );
+        contexts.add(await _getPromoContext());
       }
 
       return contexts.join('\n\n');
     } catch (e) {
-      throw Exception(
-        'Gagal mengambil konteks Firestore: $e',
-      );
+      throw Exception('Gagal mengambil konteks Firestore: $e');
     }
   }
 
@@ -143,9 +126,7 @@ class FirestoreChatbotService {
   // MENU DAN RESTORAN
   // =====================================================
 
-  Future<String> _getMenuAndRestaurantContext(
-    String question,
-  ) async {
+  Future<String> _getMenuAndRestaurantContext(String question) async {
     final menuSnapshot = await _firestore
         .collection('menus')
         .where('isAvailable', isEqualTo: true)
@@ -169,8 +150,7 @@ class FirestoreChatbotService {
 
       final restaurantId = data['id']?.toString();
 
-      if (restaurantId != null &&
-          restaurantId.isNotEmpty) {
+      if (restaurantId != null && restaurantId.isNotEmpty) {
         restaurants[restaurantId] = data;
       }
     }
@@ -178,44 +158,42 @@ class FirestoreChatbotService {
     final keywords = _extractKeywords(question);
 
     // Menghitung relevansi menu dengan pertanyaan.
-    final scoredMenus = menuSnapshot.docs.map((doc) {
-      final data = doc.data();
+    final scoredMenus = menuSnapshot.docs
+        .map((doc) {
+          final data = doc.data();
 
-      final searchable = _buildText([
-        data['name'],
-        data['category'],
-        data['description'],
-        data['tags'],
-      ]);
+          final searchable = _buildText([
+            data['name'],
+            data['category'],
+            data['description'],
+            data['tags'],
+          ]);
 
-      return {
-        ...data,
-        'documentId': doc.id,
-        '_score': _calculateScore(
-          searchable,
-          keywords,
-        ),
-      };
-    }).where((menu) {
-      return keywords.isEmpty ||
-          (menu['_score'] as int) > 0;
-    }).toList();
+          return {
+            ...data,
+            'documentId': doc.id,
+            '_score': _calculateScore(searchable, keywords),
+          };
+        })
+        .where((menu) {
+          return keywords.isEmpty || (menu['_score'] as int) > 0;
+        })
+        .toList();
 
     scoredMenus.sort(
-      (a, b) => (b['_score'] as int)
-          .compareTo(a['_score'] as int),
+      (a, b) => (b['_score'] as int).compareTo(a['_score'] as int),
     );
 
     final selectedMenus = scoredMenus.take(10).toList();
 
     // Menyusun informasi menu.
-    final menuContext = selectedMenus.map((menu) {
-      final restaurantId =
-          menu['restaurantId']?.toString() ?? '';
+    final menuContext = selectedMenus
+        .map((menu) {
+          final restaurantId = menu['restaurantId']?.toString() ?? '';
 
-      final restaurant = restaurants[restaurantId];
+          final restaurant = restaurants[restaurantId];
 
-      return '''
+          return '''
 Nama menu: ${menu['name'] ?? '-'}
 Kategori: ${menu['category'] ?? '-'}
 Deskripsi: ${menu['description'] ?? '-'}
@@ -223,14 +201,14 @@ Harga: Rp${menu['price'] ?? '-'}
 Rating: ${menu['rating'] ?? 0}
 Restoran: ${restaurant?['name'] ?? 'Tidak ditemukan'}
 ''';
-    }).join('\n');
+        })
+        .join('\n');
 
     // Menyusun informasi restoran.
     final restaurantContext = restaurants.values
         .toSet()
         .where((restaurant) {
-          final restaurantId =
-              restaurant['id']?.toString() ?? '';
+          final restaurantId = restaurant['id']?.toString() ?? '';
 
           final name = _buildText([
             restaurant['name'],
@@ -240,13 +218,10 @@ Restoran: ${restaurant?['name'] ?? 'Tidak ditemukan'}
           ]);
 
           final relatedToMenu = selectedMenus.any(
-            (menu) =>
-                menu['restaurantId']?.toString() ==
-                    restaurantId,
+            (menu) => menu['restaurantId']?.toString() == restaurantId,
           );
 
-          return relatedToMenu ||
-              _calculateScore(name, keywords) > 0;
+          return relatedToMenu || _calculateScore(name, keywords) > 0;
         })
         .take(10)
         .map((restaurant) {
@@ -282,7 +257,7 @@ ${restaurantContext.isEmpty ? 'Tidak ditemukan restoran relevan.' : restaurantCo
 
   Future<String> _getPromoContext() async {
     final snapshot = await _firestore
-        .collection('promo')
+        .collection('promos')
         .where('isActive', isEqualTo: true)
         .limit(50)
         .get();
@@ -292,13 +267,9 @@ ${restaurantContext.isEmpty ? 'Tidak ditemukan restoran relevan.' : restaurantCo
     final activePromos = snapshot.docs.where((doc) {
       final data = doc.data();
 
-      final start = DateTime.tryParse(
-        data['startDate']?.toString() ?? '',
-      );
+      final start = DateTime.tryParse(data['startDate']?.toString() ?? '');
 
-      final end = DateTime.tryParse(
-        data['endDate']?.toString() ?? '',
-      );
+      final end = DateTime.tryParse(data['endDate']?.toString() ?? '');
 
       return start != null &&
           end != null &&
@@ -306,10 +277,11 @@ ${restaurantContext.isEmpty ? 'Tidak ditemukan restoran relevan.' : restaurantCo
           !now.isAfter(end);
     }).toList();
 
-    final result = activePromos.map((doc) {
-      final data = doc.data();
+    final result = activePromos
+        .map((doc) {
+          final data = doc.data();
 
-      return '''
+          return '''
 Nama promo: ${data['title'] ?? '-'}
 Deskripsi: ${data['description'] ?? '-'}
 Diskon: ${data['discount'] ?? 0}%
@@ -317,7 +289,8 @@ Mulai: ${data['startDate'] ?? '-'}
 Berakhir: ${data['endDate'] ?? '-'}
 Syarat: ${_toText(data['terms'])}
 ''';
-    }).join('\n');
+        })
+        .join('\n');
 
     return '''
 DATA PROMO AKTIF:
@@ -329,36 +302,31 @@ ${result.isEmpty ? 'Tidak ada promo aktif saat ini.' : result}
   // REVIEW
   // =====================================================
 
-  Future<String> _getReviewContext(
-    String question,
-  ) async {
-    final snapshot = await _firestore
-        .collection('review')
-        .limit(100)
-        .get();
+  Future<String> _getReviewContext(String question) async {
+    final snapshot = await _firestore.collection('reviews').limit(100).get();
 
     final keywords = _extractKeywords(question);
 
-    final reviews = snapshot.docs.where((doc) {
-      final data = doc.data();
+    final reviews = snapshot.docs
+        .where((doc) {
+          final data = doc.data();
 
-      final searchable = _buildText([
-        data['restaurantName'],
-        data['comment'],
-        data['selectedMenus'],
-      ]);
+          final searchable = _buildText([
+            data['restaurantName'],
+            data['comment'],
+            data['selectedMenus'],
+          ]);
 
-      return keywords.isEmpty ||
-          _calculateScore(
-            searchable,
-            keywords,
-          ) > 0;
-    }).take(10).toList();
+          return keywords.isEmpty || _calculateScore(searchable, keywords) > 0;
+        })
+        .take(10)
+        .toList();
 
-    final result = reviews.map((doc) {
-      final data = doc.data();
+    final result = reviews
+        .map((doc) {
+          final data = doc.data();
 
-      return '''
+          return '''
 Restoran: ${data['restaurantName'] ?? '-'}
 Rating: ${data['rating'] ?? 0}
 Komentar: ${data['comment'] ?? '-'}
@@ -366,7 +334,8 @@ Pilihan menu: ${_toText(data['selectedMenus'])}
 Pilihan makan: ${data['diningOption'] ?? '-'}
 Balasan restoran: ${data['ownerReply'] ?? 'Belum ada balasan'}
 ''';
-    }).join('\n');
+        })
+        .join('\n');
 
     return '''
 DATA ULASAN:
@@ -378,19 +347,18 @@ ${result.isEmpty ? 'Tidak ditemukan ulasan relevan.' : result}
   // RESERVASI PENGGUNA
   // =====================================================
 
-  Future<String> _getReservationContext(
-    String uid,
-  ) async {
+  Future<String> _getReservationContext(String uid) async {
     final snapshot = await _firestore
-        .collection('reservasi')
+        .collection('reservations')
         .where('userId', isEqualTo: uid)
         .limit(20)
         .get();
 
-    final result = snapshot.docs.map((doc) {
-      final data = doc.data();
+    final result = snapshot.docs
+        .map((doc) {
+          final data = doc.data();
 
-      return '''
+          return '''
 ID reservasi: ${data['id'] ?? doc.id}
 Restoran: ${data['restaurantName'] ?? '-'}
 Tanggal: ${_toText(data['date'])}
@@ -402,7 +370,8 @@ Total pembayaran: Rp${data['totalAmount'] ?? 0}
 Status reservasi: ${data['status'] ?? '-'}
 Menu pesanan: ${_toText(data['menuItems'])}
 ''';
-    }).join('\n');
+        })
+        .join('\n');
 
     return '''
 DATA RESERVASI PENGGUNA:
@@ -414,27 +383,27 @@ ${result.isEmpty ? 'Belum ditemukan reservasi milik pengguna.' : result}
   // NOTIFIKASI PENGGUNA
   // =====================================================
 
-  Future<String> _getNotificationContext(
-    String uid,
-  ) async {
+  Future<String> _getNotificationContext(String uid) async {
     final snapshot = await _firestore
-        .collection('notification')
+        .collection('notifications')
         .where('recipientId', isEqualTo: uid)
         .where('recipientType', isEqualTo: 'user')
         .limit(20)
         .get();
 
-    final result = snapshot.docs.map((doc) {
-      final data = doc.data();
+    final result = snapshot.docs
+        .map((doc) {
+          final data = doc.data();
 
-      return '''
+          return '''
 Judul: ${data['title'] ?? '-'}
 Pesan: ${data['message'] ?? data['body'] ?? '-'}
 Jenis: ${data['type'] ?? '-'}
 Sudah dibaca: ${data['isRead'] ?? false}
 Waktu: ${_toText(data['createdAt'])}
 ''';
-    }).join('\n');
+        })
+        .join('\n');
 
     return '''
 DATA NOTIFIKASI PENGGUNA:
@@ -448,10 +417,7 @@ ${result.isEmpty ? 'Tidak ditemukan notifikasi pengguna.' : result}
 
   Future<String> _getUserContext(String uid) async {
     // Asumsi document ID pada collection user = UID.
-    final doc = await _firestore
-        .collection('user')
-        .doc(uid)
-        .get();
+    final doc = await _firestore.collection('users').doc(uid).get();
 
     if (!doc.exists) {
       return 'DATA PROFIL: Profil pengguna belum ditemukan.';
@@ -474,13 +440,8 @@ Jumlah favorit: ${data['favoriteCount'] ?? 0}
   // HELPER
   // =====================================================
 
-  bool _containsAny(
-    String text,
-    List<String> keywords,
-  ) {
-    return keywords.any(
-      (keyword) => text.contains(keyword),
-    );
+  bool _containsAny(String text, List<String> keywords) {
+    return keywords.any((keyword) => text.contains(keyword));
   }
 
   List<String> _extractKeywords(String question) {
@@ -526,17 +487,12 @@ Jumlah favorit: ${data['favoriteCount'] ?? 0}
     return question
         .toLowerCase()
         .split(RegExp(r'[^a-z0-9]+'))
-        .where((word) =>
-            word.length > 2 &&
-            !stopWords.contains(word))
+        .where((word) => word.length > 2 && !stopWords.contains(word))
         .toSet()
         .toList();
   }
 
-  int _calculateScore(
-    String text,
-    List<String> keywords,
-  ) {
+  int _calculateScore(String text, List<String> keywords) {
     int score = 0;
 
     for (final keyword in keywords) {
@@ -549,10 +505,7 @@ Jumlah favorit: ${data['favoriteCount'] ?? 0}
   }
 
   String _buildText(List<dynamic> values) {
-    return values
-        .map(_toText)
-        .join(' ')
-        .toLowerCase();
+    return values.map(_toText).join(' ').toLowerCase();
   }
 
   String _toText(dynamic value) {
@@ -574,9 +527,7 @@ Jumlah favorit: ${data['favoriteCount'] ?? 0}
 
     if (value is Map) {
       return value.entries
-          .map(
-            (e) => '${e.key}: ${_toText(e.value)}',
-          )
+          .map((e) => '${e.key}: ${_toText(e.value)}')
           .join(', ');
     }
 
