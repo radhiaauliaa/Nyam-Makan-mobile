@@ -13,7 +13,7 @@ class AuthProvider with ChangeNotifier {
   UserModel? _user;
   bool _isLoading = false;
   String? _error;
- 
+
   UserModel? get user => _user;
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -102,7 +102,7 @@ class AuthProvider with ChangeNotifier {
         final storedRole = userData['role'] ?? '';
         String normalizedStoredRole = storedRole;
         if (storedRole == 'owner') normalizedStoredRole = 'Pemilik Resto';
-        
+
         if (normalizedStoredRole == 'Pemilik Resto') {
           // Cari info resto untuk mendapatkan alasan penolakan
           final restoSnapshot = await _firestore
@@ -110,24 +110,28 @@ class AuthProvider with ChangeNotifier {
               .where('ownerId', isEqualTo: userId)
               .limit(1)
               .get();
-          
-          String message = 'Akun Anda telah dinonaktifkan karena pengajuan restoran ditolak.';
-          
+
+          String message =
+              'Akun Anda telah dinonaktifkan karena pengajuan restoran ditolak.';
+
           if (restoSnapshot.docs.isNotEmpty) {
             final restoData = restoSnapshot.docs.first.data();
             final restoName = restoData['name'] ?? 'restoran Anda';
             final restoStatus = restoData['status'] ?? '';
-            
+
             if (restoStatus == 'rejected') {
-              message = 'Pengajuan restoran "$restoName" ditolak.\n\n' +
+              message =
+                  'Pengajuan restoran "$restoName" ditolak.\n\n' +
                   'Akun Anda telah dinonaktifkan.\n\n' +
                   'Silakan hubungi admin untuk informasi lebih lanjut: admin@nyammakan.com';
             }
           }
-          
+
           throw Exception(message);
         } else {
-          throw Exception('Akun Anda telah ditangguhkan. Silakan hubungi admin.');
+          throw Exception(
+            'Akun Anda telah ditangguhkan. Silakan hubungi admin.',
+          );
         }
       }
 
@@ -254,7 +258,7 @@ class AuthProvider with ChangeNotifier {
       _error = e.toString();
       _isLoading = false;
       notifyListeners();
-      throw e.toString();
+      rethrow;
     }
   }
 
@@ -311,7 +315,7 @@ class AuthProvider with ChangeNotifier {
     } catch (e) {
       _error = e.toString();
       notifyListeners();
-      throw e;
+      rethrow;
     } finally {
       _isLoading = false;
       notifyListeners();

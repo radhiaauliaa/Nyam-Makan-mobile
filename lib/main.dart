@@ -1,5 +1,6 @@
 // main.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'utils/theme.dart';
@@ -14,15 +15,17 @@ import 'providers/location_provider.dart';
 import 'services/fcm_service.dart';
 import 'firebase_options.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
- 
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  await FirebaseAppCheck.instance.activate(
-    androidProvider: AndroidProvider.debug,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  // App Check Android tidak kompatibel dengan target web.
+  // Untuk testing di Chrome, Firebase tetap dapat digunakan tanpa App Check.
+  if (!kIsWeb) {
+    await FirebaseAppCheck.instance.activate(
+      androidProvider: AndroidProvider.debug,
+    );
+  }
   await FCMService.initialize();
 
   runApp(const MyApp());
@@ -56,4 +59,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-

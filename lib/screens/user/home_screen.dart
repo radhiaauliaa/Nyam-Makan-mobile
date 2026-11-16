@@ -15,6 +15,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/location_provider.dart';
 import '../../services/fcm_service.dart';
 import '../shared/notifications_screen.dart';
+import '../shared/chatbot_screen.dart';
 import '../../utils/theme.dart';
 import '../../widgets/custom_bottom_nav_bar.dart';
 
@@ -127,6 +128,19 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       bottomNavigationBar: _buildBottomNavBar(context, 0),
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'chatbot_fab',
+        backgroundColor: AppColors.primaryOrange,
+        foregroundColor: Colors.white,
+        tooltip: 'Buka chatbot',
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ChatbotScreen()),
+          );
+        },
+        child: const Icon(Icons.smart_toy),
+      ),
     );
   }
 
