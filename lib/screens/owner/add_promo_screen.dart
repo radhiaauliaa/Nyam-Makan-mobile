@@ -86,10 +86,12 @@ class _AddPromoScreenState extends State<AddPromoScreen> {
   }
 
   Widget _buildRestaurantInfo() {
-    final restaurantRating = widget.restaurant.rating.toString();
     final restaurantCategory = widget.restaurant.categories.isNotEmpty
         ? widget.restaurant.categories.join(', ')
-        : 'Kategori restoran';
+        : '';
+    final hasRating =
+        widget.restaurant.rating > 0 && widget.restaurant.totalReviews > 0;
+    final isVerified = widget.restaurant.status == 'verified';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -143,58 +145,71 @@ class _AddPromoScreenState extends State<AddPromoScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
+                if (restaurantCategory.isNotEmpty)
+                  Text(
+                    restaurantCategory,
+                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(Icons.star, color: Colors.amber, size: 16),
-                    const SizedBox(width: 4),
-                    Text(
-                      '$restaurantRating',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
+                if (hasRating)
+                  Row(
+                    children: [
+                      const Icon(Icons.star, color: Colors.amber, size: 16),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${widget.restaurant.rating}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '(${widget.restaurant.totalReviews} ratings)',
-                      style: const TextStyle(color: Colors.grey, fontSize: 12),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
+                      const SizedBox(width: 4),
+                      Text(
+                        '(${widget.restaurant.totalReviews} ratings)',
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 12,
+                        ),
                       ),
-                      decoration: BoxDecoration(
-                        color: Colors.green[50],
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.check_circle,
-                            color: Colors.green[700],
-                            size: 14,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Terverifikasi',
-                            style: TextStyle(
+                    ],
+                  ),
+                if (isVerified) ...[
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.green[50],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.check_circle,
                               color: Colors.green[700],
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
+                              size: 14,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 4),
+                            Text(
+                              'Terverifikasi',
+                              style: TextStyle(
+                                color: Colors.green[700],
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),

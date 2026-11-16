@@ -451,36 +451,37 @@ class _HomeScreenState extends State<HomeScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    restaurant.categories.isNotEmpty
-                        ? restaurant.categories.first
-                        : 'Restoran',
-                    style: const TextStyle(fontSize: 11, color: Colors.grey),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(Icons.star, color: Colors.amber, size: 14),
-                      const SizedBox(width: 2),
-                      Text(
-                        '${restaurant.rating}',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
+                  if (restaurant.categories.isNotEmpty)
+                    Text(
+                      restaurant.categories.first,
+                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  if (restaurant.rating > 0 && restaurant.totalReviews > 0) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(Icons.star, color: Colors.amber, size: 14),
+                        const SizedBox(width: 2),
+                        Text(
+                          '${restaurant.rating}',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '(${restaurant.totalReviews})',
-                        style: const TextStyle(
-                          fontSize: 10,
-                          color: Colors.grey,
+                        const SizedBox(width: 4),
+                        Text(
+                          '(${restaurant.totalReviews})',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: Colors.grey,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),

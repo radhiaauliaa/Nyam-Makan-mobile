@@ -1,22 +1,16 @@
-
 import 'package:firebase_ai/firebase_ai.dart';
 
 class GeminiService {
-  final GenerativeModel _model =
-      FirebaseAI.googleAI().generativeModel(
+  final GenerativeModel _model = FirebaseAI.googleAI().generativeModel(
     model: 'gemini-3.5-flash-lite',
-    generationConfig: GenerationConfig(
-      maxOutputTokens: 100,
-    ),
+    generationConfig: GenerationConfig(maxOutputTokens: 1024),
   );
 
   Future<String> sendMessage(String message) async {
     try {
       print('Mengirim permintaan ke Gemini...');
 
-      final response = await _model.generateContent([
-        Content.text(message),
-      ]);
+      final response = await _model.generateContent([Content.text(message)]);
 
       print('Respons Gemini: ${response.text}');
 

@@ -263,74 +263,93 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen>
             style: const TextStyle(color: Colors.grey, fontSize: 14),
           ),
           const SizedBox(height: 8),
-          Row(
-            children: [
-              const Icon(Icons.star, color: AppColors.primaryOrange, size: 20),
-              Text(
-                '${widget.restaurant.rating}',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              Text(
-                ' (${widget.restaurant.totalReviews} ratings)',
-                style: const TextStyle(color: Colors.grey),
-              ),
-              const Spacer(),
-              if (widget.restaurant.discount > 0)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
+          if (widget.restaurant.rating > 0 ||
+              widget.restaurant.totalReviews > 0 ||
+              widget.restaurant.discount > 0)
+            Row(
+              children: [
+                if (widget.restaurant.rating > 0 &&
+                    widget.restaurant.totalReviews > 0) ...[
+                  const Icon(
+                    Icons.star,
+                    color: AppColors.primaryOrange,
+                    size: 20,
                   ),
-                  decoration: BoxDecoration(
-                    color: Colors.red[50],
-                    borderRadius: BorderRadius.circular(6),
+                  Text(
+                    '${widget.restaurant.rating}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  child: Text(
-                    'Diskon ${widget.restaurant.discount}%',
-                    style: TextStyle(
-                      color: Colors.red[700],
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
+                  Text(
+                    ' (${widget.restaurant.totalReviews} ratings)',
+                    style: const TextStyle(color: Colors.grey),
+                  ),
+                ],
+                const Spacer(),
+                if (widget.restaurant.discount > 0)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.red[50],
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      'Diskon ${widget.restaurant.discount}%',
+                      style: TextStyle(
+                        color: Colors.red[700],
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          // Status Buka/Tutup
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: widget.restaurant.isOpen
-                  ? Colors.green.withOpacity(0.1)
-                  : Colors.red.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: widget.restaurant.isOpen
-                    ? Colors.green.withOpacity(0.3)
-                    : Colors.red.withOpacity(0.3),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  widget.restaurant.isOpen ? Icons.access_time : Icons.schedule,
-                  size: 16,
-                  color: widget.restaurant.isOpen ? Colors.green : Colors.red,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  widget.restaurant.isOpen ? 'Buka sekarang' : 'Tutup sekarang',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: widget.restaurant.isOpen ? Colors.green : Colors.red,
-                  ),
-                ),
               ],
             ),
-          ),
+          if (widget.restaurant.isOpen != null) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: widget.restaurant.isOpen == true
+                    ? Colors.green.withOpacity(0.1)
+                    : Colors.red.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: widget.restaurant.isOpen == true
+                      ? Colors.green.withOpacity(0.3)
+                      : Colors.red.withOpacity(0.3),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    widget.restaurant.isOpen == true
+                        ? Icons.access_time
+                        : Icons.schedule,
+                    size: 16,
+                    color: widget.restaurant.isOpen == true
+                        ? Colors.green
+                        : Colors.red,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    widget.restaurant.isOpen == true
+                        ? 'Buka sekarang'
+                        : 'Tutup sekarang',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: widget.restaurant.isOpen == true
+                          ? Colors.green
+                          : Colors.red,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           Row(
             children: [
@@ -352,7 +371,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen>
               const SizedBox(width: 8),
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: widget.restaurant.isOpen
+                  onPressed: widget.restaurant.isOpen == true
                       ? () {
                           Navigator.push(
                             context,
@@ -520,7 +539,6 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen>
     );
   }
 
-  // Ulasan (dummy)
   Widget _buildReviewsTab() {
     return Column(
       children: [
@@ -864,32 +882,41 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen>
             Icons.location_on,
           ),
           _buildInfoItem('Telepon', widget.restaurant.phone, Icons.phone),
-          _buildInfoItem(
-            'Jam Buka',
-            '${widget.restaurant.openTime} - ${widget.restaurant.closeTime}',
-            Icons.access_time,
-          ),
+          if (widget.restaurant.openTime.isNotEmpty ||
+              widget.restaurant.closeTime.isNotEmpty)
+            _buildInfoItem(
+              'Jam Buka',
+              [
+                widget.restaurant.openTime,
+                widget.restaurant.closeTime,
+              ].where((time) => time.isNotEmpty).join(' - '),
+              Icons.access_time,
+            ),
           _buildInfoItem(
             'Kategori',
             widget.restaurant.category,
             Icons.category,
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Deskripsi',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            widget.restaurant.description,
-            style: const TextStyle(fontSize: 14, color: Colors.grey),
-          ),
+          if (widget.restaurant.description.isNotEmpty) ...[
+            const Text(
+              'Deskripsi',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              widget.restaurant.description,
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+          ],
         ],
       ),
     );
   }
 
   Widget _buildInfoItem(String title, String value, IconData icon) {
+    if (value.trim().isEmpty) return const SizedBox.shrink();
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(

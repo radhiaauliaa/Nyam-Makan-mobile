@@ -27,9 +27,16 @@ class OwnerHomeScreen extends StatefulWidget {
 
 class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
   bool _loaded = false;
-  bool _dataLoaded = false;
-  int _todayReservationCount = 0;
-  int _menuCount = 0;
+  bool _statsLoading = false;
+  String? _statsError;
+  int? _todayReservationCount;
+  int? _menuCount;
+  int? _reviewCount;
+  double? _averageRating;
+  RestaurantProvider? _listenedRestaurantProvider;
+  String? _statsRestaurantId;
+  bool _statsRequestInProgress = false;
+  String? _pendingStatsRestaurantId;
 
   @override
   void didChangeDependencies() {
@@ -37,21 +44,14 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
     if (!_loaded) {
       final auth = Provider.of<AuthProvider>(context, listen: false);
       final rp = Provider.of<RestaurantProvider>(context, listen: false);
-      
+
       if (auth.user != null) {
-        // Listen untuk perubahan restaurant
-        rp.addListener(() {
-          if (rp.currentRestaurant != null && mounted) {
-            _loadTodayReservations(rp.currentRestaurant!.id);
-            _loadMenuCount(rp.currentRestaurant!.id);
-          }
-        });
-        
-        // Load restaurant pertama kali
+        _listenedRestaurantProvider = rp;
+        rp.addListener(_onRestaurantChanged);
+
         rp.loadCurrentRestaurant(auth.user!.id).then((_) {
           if (rp.currentRestaurant != null && mounted) {
-            _loadTodayReservations(rp.currentRestaurant!.id);
-            _loadMenuCount(rp.currentRestaurant!.id);
+            _loadDashboardStats(rp.currentRestaurant!.id);
           }
         });
 
@@ -63,6 +63,17 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
         notifProvider.listenToUnreadCount(auth.user!.id);
       }
       _loaded = true;
+    }
+  }
+
+  void _onRestaurantChanged() {
+    final provider = _listenedRestaurantProvider;
+    final restaurant = provider?.currentRestaurant;
+    if (provider != null &&
+        !provider.isLoading &&
+        restaurant != null &&
+        restaurant.id != _statsRestaurantId) {
+      _loadDashboardStats(restaurant.id);
     }
   }
 
@@ -115,7 +126,7 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
       routeObserver.addScopedWillPopCallback(() {
         return Future.value(true);
       });
-      
+
       // Check if we're coming back from another screen
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (ModalRoute.of(context)?.isCurrent ?? false) {
@@ -127,222 +138,231 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
 
   @override
   void dispose() {
-    // Cancel listener jika ada
-    final rp = context.read<RestaurantProvider>();
-    rp.removeListener(() {}); // Hapus listener yang ditambahkan
-    
+    _listenedRestaurantProvider?.removeListener(_onRestaurantChanged);
     super.dispose();
   }
 
   Future<void> _refreshData() async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final rp = Provider.of<RestaurantProvider>(context, listen: false);
-    
+
     if (auth.user != null && rp.currentRestaurant != null) {
-      setState(() {
-        _dataLoaded = false; // Reset status loading
-      });
-      await _loadTodayReservations(rp.currentRestaurant!.id);
-      await _loadMenuCount(rp.currentRestaurant!.id);
+      await _loadDashboardStats(rp.currentRestaurant!.id);
     }
   }
 
-  Future<void> _loadTodayReservations(String restaurantId) async {
+  Future<void> _loadDashboardStats(String restaurantId) async {
+    if (_statsRequestInProgress) {
+      if (_statsRestaurantId != restaurantId) {
+        _pendingStatsRestaurantId = restaurantId;
+      }
+      return;
+    }
+    _statsRequestInProgress = true;
+    _statsRestaurantId = restaurantId;
+    if (mounted) {
+      setState(() {
+        _statsLoading = true;
+        _statsError = null;
+      });
+    }
+
     try {
       final now = DateTime.now();
       final todayStart = DateTime(now.year, now.month, now.day);
-      final todayEnd = DateTime(now.year, now.month, now.day, 23, 59, 59);
+      final tomorrowStart = todayStart.add(const Duration(days: 1));
+      final firestore = FirebaseFirestore.instance;
 
-      final querySnapshot = await FirebaseFirestore.instance
-          .collection('reservations')
-          .where('restaurantId', isEqualTo: restaurantId)
-          .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(todayStart))
-          .where('createdAt', isLessThanOrEqualTo: Timestamp.fromDate(todayEnd))
-          .get();
+      final results = await Future.wait([
+        firestore
+            .collection('reservations')
+            .where('restaurantId', isEqualTo: restaurantId)
+            .where(
+              'date',
+              isGreaterThanOrEqualTo: Timestamp.fromDate(todayStart),
+            )
+            .where('date', isLessThan: Timestamp.fromDate(tomorrowStart))
+            .get(),
+        firestore
+            .collection('menus')
+            .where('restaurantId', isEqualTo: restaurantId)
+            .get(),
+        firestore
+            .collection('reviews')
+            .where('restaurantId', isEqualTo: restaurantId)
+            .get(),
+      ]);
 
-      // Juga hitung reservasi yang scheduled untuk hari ini
-      final scheduledQuery = await FirebaseFirestore.instance
-          .collection('reservations')
-          .where('restaurantId', isEqualTo: restaurantId)
-          .where('date', isEqualTo: _formatDate(now))
-          .get();
+      final reviewDocs = results[2].docs;
+      final ratings = reviewDocs
+          .map((doc) => doc.data()['rating'])
+          .whereType<num>()
+          .map((rating) => rating.toDouble())
+          .toList();
+      final averageRating = ratings.isEmpty
+          ? null
+          : ratings.reduce((total, rating) => total + rating) / ratings.length;
 
-      // Gabungkan hasil (hindari duplikat berdasarkan ID)
-      final allReservations = <String, dynamic>{};
-      querySnapshot.docs.forEach((doc) {
-        allReservations[doc.id] = doc.data();
-      });
-      scheduledQuery.docs.forEach((doc) {
-        allReservations[doc.id] = doc.data();
-      });
-
+      if (!mounted) return;
       setState(() {
-        _todayReservationCount = allReservations.length;
+        _todayReservationCount = results[0].docs.length;
+        _menuCount = results[1].docs.length;
+        _reviewCount = reviewDocs.length;
+        _averageRating = averageRating;
+        _statsLoading = false;
       });
     } catch (e) {
-      print('Error loading today reservations: $e');
-    }
-  }
-
-  // Method untuk menghitung jumlah menu
-  Future<void> _loadMenuCount(String restaurantId) async {
-    try {
-      final querySnapshot = await FirebaseFirestore.instance
-          .collection('menus')
-          .where('restaurantId', isEqualTo: restaurantId)
-          .get();
-
+      if (!mounted) return;
       setState(() {
-        _menuCount = querySnapshot.docs.length;
-        _dataLoaded = true; // Set data sudah di-load
+        _statsError = 'Gagal memuat statistik: $e';
+        _statsLoading = false;
       });
-    } catch (e) {
-      print('Error loading menu count: $e');
-      _dataLoaded = true; // Tetap set true meskipun error
+    } finally {
+      _statsRequestInProgress = false;
+      final pendingRestaurantId = _pendingStatsRestaurantId;
+      _pendingStatsRestaurantId = null;
+      if (mounted &&
+          pendingRestaurantId != null &&
+          pendingRestaurantId != restaurantId) {
+        _loadDashboardStats(pendingRestaurantId);
+      }
     }
-  }
-
-  
-  // Helper untuk format date
-  String _formatDate(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 
   @override
-Widget build(BuildContext context) {
-  final restaurantProvider = Provider.of<RestaurantProvider>(context);
-  final Restaurant? restaurant = restaurantProvider.currentRestaurant;
+  Widget build(BuildContext context) {
+    final restaurantProvider = Provider.of<RestaurantProvider>(context);
+    final Restaurant? restaurant = restaurantProvider.currentRestaurant;
 
-  // Tampilkan loading jika restaurant masih loading ATAU data statistik belum di-load
-  if (restaurantProvider.isLoading || 
-      (restaurant != null && _todayReservationCount == 0 && _menuCount == 0 && !_dataLoaded)) {
-    return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (restaurantProvider.isLoading ||
+        (restaurant != null &&
+            _statsLoading &&
+            _todayReservationCount == null)) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (restaurant == null || restaurant.status == 'pending') {
+      return _buildRegisterPrompt();
+    }
+
+    return _buildOwnerDashboard(context, restaurant);
   }
 
-  // Jika resto belum terdaftar ATAU status pending
-  if (restaurant == null || restaurant.status == 'pending') {
-    return _buildRegisterPrompt();
-  }
-
-  // Jika resto sudah terdaftar dan verified
-  return _buildOwnerDashboard(context, restaurant);
-}
-
-// Hapus parameter context karena sudah ada di class
-Widget _buildRegisterPrompt() {
-  return Scaffold(
-    backgroundColor: Colors.white,
-    body: SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Logo atau icon
-            const Icon(
-              Icons.restaurant,
-              size: 80,
-              color: AppColors.primaryOrange,
-            ),
-            const SizedBox(height: 24),
-
-            // Title
-            const Text(
-              'Kelola Resto Mu',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
+  // Hapus parameter context karena sudah ada di class
+  Widget _buildRegisterPrompt() {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Logo atau icon
+              const Icon(
+                Icons.restaurant,
+                size: 80,
+                color: AppColors.primaryOrange,
               ),
-            ),
-            const SizedBox(height: 8),
+              const SizedBox(height: 24),
 
-            const Text(
-              'Daftar sebagai Merchant',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-            const SizedBox(height: 24),
+              // Title
+              const Text(
+                'Kelola Resto Mu',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 8),
 
-            // Description
-            const Text(
-              'Bergabunglah dengan Nyam! Makaan untuk mengelola restoran Anda secara digital',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-            const SizedBox(height: 32),
+              const Text(
+                'Daftar sebagai Merchant',
+                style: TextStyle(fontSize: 16, color: Colors.grey),
+              ),
+              const SizedBox(height: 24),
 
-            // Tombol Daftar
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const RestaurantRegisterScreen(),
+              // Description
+              const Text(
+                'Bergabunglah dengan Nyam! Makaan untuk mengelola restoran Anda secara digital',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+              const SizedBox(height: 32),
+
+              // Tombol Daftar
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const RestaurantRegisterScreen(),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryOrange,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryOrange,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Text(
+                    'Daftarkan Resto',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
-                child: const Text(
-                  'Daftarkan Resto',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // TAMBAHKAN parameter context
+  Widget _buildOwnerDashboard(BuildContext context, Restaurant restaurant) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFEEEEEE),
+      body: RefreshIndicator(
+        onRefresh: _refreshData,
+        child: Column(
+          children: [
+            // Header dengan background orange curved
+            _buildHeader(context, restaurant),
+
+            // Content
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Stats Grid - dipindah ke atas
+                    _buildStatsGridNew(),
+                    const SizedBox(height: 16),
+
+                    // Restaurant Info Card - DESAIN BARU
+                    _buildRestaurantInfoCardNew(restaurant),
+                    const SizedBox(height: 24),
+
+                    // Action Buttons
+                    _buildActionButtonsNew(context),
+                  ],
                 ),
               ),
             ),
           ],
         ),
       ),
-    ),
-  );
-}
-
-  // TAMBAHKAN parameter context
-  Widget _buildOwnerDashboard(BuildContext context, Restaurant restaurant) {
-  return Scaffold(
-    backgroundColor: const Color(0xFFEEEEEE),
-    body: RefreshIndicator(
-      onRefresh: _refreshData,
-      child: Column(
-        children: [
-          // Header dengan background orange curved
-          _buildHeader(context, restaurant),
-
-          // Content
-          Expanded(
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Stats Grid - dipindah ke atas
-                  _buildStatsGridNew(restaurant),
-                  const SizedBox(height: 16),
-
-                  // Restaurant Info Card - DESAIN BARU
-                  _buildRestaurantInfoCardNew(restaurant),
-                  const SizedBox(height: 24),
-
-                  // Action Buttons
-                  _buildActionButtonsNew(context),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    ),
-    bottomNavigationBar: _buildBottomNavBar(0),
-  );
-}
+      bottomNavigationBar: _buildBottomNavBar(0),
+    );
+  }
 
   Widget _buildHeader(BuildContext context, Restaurant restaurant) {
     final userId = Provider.of<AuthProvider>(context, listen: false).user?.id;
@@ -563,38 +583,45 @@ Widget _buildRegisterPrompt() {
 
                   const Spacer(),
 
-                  // Rating
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      const Text(
-                        'Rating',
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          const Icon(Icons.star, color: Colors.amber, size: 16),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${restaurant.rating}',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '(${restaurant.totalReviews} ulasan)',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                  if ((_averageRating ?? 0) > 0 || (_reviewCount ?? 0) > 0)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        const Text(
+                          'Rating',
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            if (_averageRating != null)
+                              const Icon(
+                                Icons.star,
+                                color: Colors.amber,
+                                size: 16,
+                              ),
+                            const SizedBox(width: 4),
+                            if (_averageRating != null)
+                              Text(
+                                _averageRating!.toStringAsFixed(1),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            const SizedBox(width: 4),
+                            if ((_reviewCount ?? 0) > 0)
+                              Text(
+                                '($_reviewCount ulasan)',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
                 ],
               ),
 
@@ -666,7 +693,7 @@ Widget _buildRegisterPrompt() {
   Widget _buildAddressSmart(String address) {
     // Ambil bagian pertama alamat (biasanya jalan)
     final parts = address.split(',');
-    
+
     if (parts.length >= 2) {
       // Ambil hanya jalan dan kecamatan
       return Column(
@@ -696,7 +723,40 @@ Widget _buildRegisterPrompt() {
   }
 
   // DESAIN BARU Stats Grid seperti gambar 2 - compact horizontal dalam 1 card
-  Widget _buildStatsGridNew(Restaurant restaurant) {
+  Widget _buildStatsGridNew() {
+    if (_statsError != null) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          children: [
+            Text(
+              _statsError!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.red),
+            ),
+            TextButton(
+              onPressed: _statsLoading || _statsRestaurantId == null
+                  ? null
+                  : () => _loadDashboardStats(_statsRestaurantId!),
+              child: const Text('Coba lagi'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_statsLoading ||
+        _todayReservationCount == null ||
+        _menuCount == null ||
+        _reviewCount == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -724,15 +784,11 @@ Widget _buildRegisterPrompt() {
             Icons.restaurant_menu,
           ),
           const SizedBox(width: 8),
-          _buildStatItemNew(
-            'Jumlah Ulasan',
-            '${restaurant.totalReviews}',
-            Icons.reviews,
-          ),
+          _buildStatItemNew('Jumlah Ulasan', '$_reviewCount', Icons.reviews),
           const SizedBox(width: 8),
           _buildStatItemNew(
             'Rating',
-            '${restaurant.rating.toStringAsFixed(1)}',
+            _averageRating?.toStringAsFixed(1) ?? '-',
             Icons.star,
           ),
         ],
@@ -995,8 +1051,10 @@ Widget _buildRegisterPrompt() {
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     decoration: BoxDecoration(
-                      color: restaurant.isOpen
+                      color: restaurant.isOpen == true
                           ? Colors.green
+                          : restaurant.isOpen == false
+                          ? Colors.red
                           : Colors.grey[200],
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -1006,7 +1064,7 @@ Widget _buildRegisterPrompt() {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          color: restaurant.isOpen
+                          color: restaurant.isOpen == true
                               ? Colors.white
                               : Colors.grey[600],
                         ),
@@ -1022,7 +1080,9 @@ Widget _buildRegisterPrompt() {
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     decoration: BoxDecoration(
-                      color: !restaurant.isOpen ? Colors.red : Colors.grey[200],
+                      color: restaurant.isOpen == false
+                          ? Colors.red
+                          : Colors.grey[200],
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Center(
@@ -1031,7 +1091,7 @@ Widget _buildRegisterPrompt() {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          color: !restaurant.isOpen
+                          color: restaurant.isOpen == false
                               ? Colors.white
                               : Colors.grey[600],
                         ),
@@ -1047,18 +1107,32 @@ Widget _buildRegisterPrompt() {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                restaurant.isOpen ? Icons.check_circle : Icons.cancel,
+                restaurant.isOpen == null
+                    ? Icons.help_outline
+                    : restaurant.isOpen == true
+                    ? Icons.check_circle
+                    : Icons.cancel,
                 size: 16,
-                color: restaurant.isOpen ? Colors.green : Colors.red,
+                color: restaurant.isOpen == null
+                    ? Colors.grey
+                    : restaurant.isOpen == true
+                    ? Colors.green
+                    : Colors.red,
               ),
               const SizedBox(width: 4),
               Text(
-                restaurant.isOpen
+                restaurant.isOpen == null
+                    ? 'Status belum diatur'
+                    : restaurant.isOpen == true
                     ? 'Restoran Anda sedang buka'
                     : 'Restoran Anda sedang tutup',
                 style: TextStyle(
                   fontSize: 12,
-                  color: restaurant.isOpen ? Colors.green : Colors.red,
+                  color: restaurant.isOpen == null
+                      ? Colors.grey
+                      : restaurant.isOpen == true
+                      ? Colors.green
+                      : Colors.red,
                 ),
               ),
             ],
@@ -1176,7 +1250,7 @@ Widget _buildRegisterPrompt() {
       case 'rejected':
         return 'Ditolak';
       default:
-        return status;
+        return status.isEmpty ? 'Status tidak tersedia' : status;
     }
   }
 }

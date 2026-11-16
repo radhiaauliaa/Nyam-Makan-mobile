@@ -19,6 +19,20 @@ class AuthProvider with ChangeNotifier {
   String? get error => _error;
   bool get isAuthenticated => _auth.currentUser != null;
 
+  String _normalizeRole(String role) {
+    switch (role) {
+      case 'owner':
+      case 'Pemilik Restoran':
+        return 'Pemilik Resto';
+      case 'user':
+        return 'Pengguna';
+      case 'admin':
+        return 'Admin';
+      default:
+        return role;
+    }
+  }
+
   // Muat user aktif saat app dibuka / rebuild
   Future<void> loadCurrentUser() async {
     final currentUser = _auth.currentUser;
@@ -47,10 +61,7 @@ class AuthProvider with ChangeNotifier {
       }
 
       // Normalisasi role
-      String userRole = data['role'] ?? 'user';
-      if (userRole == 'owner') userRole = 'Pemilik Resto';
-      if (userRole == 'user') userRole = 'Pengguna';
-      if (userRole == 'admin') userRole = 'Admin';
+      final userRole = _normalizeRole(data['role']?.toString() ?? 'user');
 
       _user = UserModel(
         id: currentUser.uid,
@@ -74,9 +85,10 @@ class AuthProvider with ChangeNotifier {
   }
 
   // Login pakai username dan password
-  Future<void> login(String username, String password, String role) async {
+  Future<void> login(String username, String password) async {
     _isLoading = true;
     _error = null;
+    _user = null;
     notifyListeners();
 
     try {
@@ -94,16 +106,16 @@ class AuthProvider with ChangeNotifier {
       final userData = querySnapshot.docs.first.data();
       final email = userData['email'];
       final userId = querySnapshot.docs.first.id;
+      final storedRole = _normalizeRole(userData['role']?.toString() ?? '');
+      if (!['Pengguna', 'Pemilik Resto', 'Admin'].contains(storedRole)) {
+        throw Exception('Role akun tidak valid. Hubungi administrator.');
+      }
 
       // CEK STATUS AKUN DULU SEBELUM LOGIN
       final userStatus = userData['status'] ?? 'active';
       if (userStatus == 'suspended') {
         // Cek apakah ini pemilik resto yang ditolak
-        final storedRole = userData['role'] ?? '';
-        String normalizedStoredRole = storedRole;
-        if (storedRole == 'owner') normalizedStoredRole = 'Pemilik Resto';
-
-        if (normalizedStoredRole == 'Pemilik Resto') {
+        if (storedRole == 'Pemilik Resto') {
           // Cari info resto untuk mendapatkan alasan penolakan
           final restoSnapshot = await _firestore
               .collection('restaurants')
@@ -138,20 +150,6 @@ class AuthProvider with ChangeNotifier {
       // Login pakai email dan password
       await _auth.signInWithEmailAndPassword(email: email, password: password);
 
-      // Cek role cocok
-      final storedRole = userData['role'] ?? '';
-      String normalizedStoredRole = storedRole;
-      if (storedRole == 'owner') normalizedStoredRole = 'Pemilik Resto';
-      if (storedRole == 'user') normalizedStoredRole = 'Pengguna';
-      if (storedRole == 'admin') normalizedStoredRole = 'Admin';
-
-      if (normalizedStoredRole != role) {
-        await _auth.signOut();
-        throw Exception(
-          'Role tidak sesuai. Silakan login sebagai $normalizedStoredRole',
-        );
-      }
-
       // Simpan user ke state provider
       DateTime createdAt;
       if (userData['createdAt'] is Timestamp) {
@@ -165,16 +163,11 @@ class AuthProvider with ChangeNotifier {
         updatedAt = (userData['updatedAt'] as Timestamp).toDate();
       }
 
-      String finalRole = storedRole;
-      if (storedRole == 'owner') finalRole = 'Pemilik Resto';
-      if (storedRole == 'user') finalRole = 'Pengguna';
-      if (storedRole == 'admin') finalRole = 'Admin';
-
       _user = UserModel(
         id: userId,
         email: email,
         username: userData['username'] ?? '',
-        role: finalRole,
+        role: storedRole,
         status: userData['status'] ?? 'active',
         phone: userData['phone'],
         address: userData['address'],
@@ -371,10 +364,7 @@ class AuthProvider with ChangeNotifier {
       }
 
       // Normalisasi role
-      String userRole = data['role'] ?? 'user';
-      if (userRole == 'owner') userRole = 'Pemilik Resto';
-      if (userRole == 'user') userRole = 'Pengguna';
-      if (userRole == 'admin') userRole = 'Admin';
+      final userRole = _normalizeRole(data['role']?.toString() ?? 'user');
 
       _user = UserModel(
         id: currentUser.uid,
@@ -403,7 +393,7 @@ class AuthProvider with ChangeNotifier {
   }
 
   // 🔹 Google Sign-In
-  Future<UserCredential?> signInWithGoogle(String role) async {
+  Future<UserCredential?> signInWithGoogle() async {
     try {
       _isLoading = true;
       notifyListeners();
@@ -419,6 +409,17 @@ class AuthProvider with ChangeNotifier {
         _isLoading = false;
         notifyListeners();
         return null;
+      }
+
+      final registeredUser = await _firestore
+          .collection('users')
+          .where('email', isEqualTo: googleUser.email)
+          .limit(1)
+          .get();
+      if (registeredUser.docs.isEmpty) {
+        throw Exception(
+          'Akun belum terdaftar. Silakan daftar terlebih dahulu.',
+        );
       }
 
       // Obtain the auth details from the request
@@ -441,21 +442,10 @@ class AuthProvider with ChangeNotifier {
           .get();
 
       if (!userDoc.exists) {
-        // Create new user document for first-time Google sign-in
-        await _firestore.collection('users').doc(userCredential.user!.uid).set({
-          'email': userCredential.user!.email,
-          'username':
-              userCredential.user!.displayName ??
-              userCredential.user!.email!.split('@')[0],
-          'role': role,
-          'status': 'active',
-          'profileImage': userCredential.user!.photoURL,
-          'phone': userCredential.user!.phoneNumber,
-          'reviewCount': 0,
-          'favoriteCount': 0,
-          'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
+        await _auth.signOut();
+        throw Exception(
+          'Akun belum terdaftar. Silakan daftar terlebih dahulu.',
+        );
       } else {
         // Cek apakah user ditangguhkan
         final userData = userDoc.data()!;
@@ -467,18 +457,10 @@ class AuthProvider with ChangeNotifier {
           );
         }
 
-        // Cek role cocok
-        String storedRole = userData['role'] ?? '';
-        String normalizedStoredRole = storedRole;
-        if (storedRole == 'owner') normalizedStoredRole = 'Pemilik Resto';
-        if (storedRole == 'user') normalizedStoredRole = 'Pengguna';
-        if (storedRole == 'admin') normalizedStoredRole = 'Admin';
-
-        if (normalizedStoredRole != role) {
+        final storedRole = _normalizeRole(userData['role']?.toString() ?? '');
+        if (!['Pengguna', 'Pemilik Resto', 'Admin'].contains(storedRole)) {
           await _auth.signOut();
-          throw Exception(
-            'Role tidak sesuai. Silakan login sebagai $normalizedStoredRole',
-          );
+          throw Exception('Role akun tidak valid. Hubungi administrator.');
         }
       }
 
@@ -499,6 +481,9 @@ class AuthProvider with ChangeNotifier {
 
       return userCredential;
     } catch (e) {
+      if (_auth.currentUser != null) {
+        await _auth.signOut();
+      }
       _isLoading = false;
       _error = e.toString();
       notifyListeners();
