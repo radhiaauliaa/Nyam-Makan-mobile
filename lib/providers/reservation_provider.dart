@@ -330,6 +330,23 @@ class ReservationProvider with ChangeNotifier {
     }
   }
 
+  Future<bool> updatePaymentMethod(
+    String reservationId,
+    String paymentMethod,
+  ) async {
+    try {
+      await _reservationService.updatePaymentMethod(
+        reservationId,
+        paymentMethod,
+      );
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
   // Owner: Verify payment proof (awaiting_payment -> confirmed)
   Future<bool> verifyPaymentProof(String reservationId, bool isValid) async {
     _error = null;

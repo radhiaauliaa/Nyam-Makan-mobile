@@ -179,8 +179,8 @@ class _ProblematicAccountsScreenState extends State<ProblematicAccountsScreen>
                       ),
                       decoration: BoxDecoration(
                         color: status == 'suspended'
-                            ? Colors.red.withOpacity(0.1)
-                            : AppColors.primaryOrange.withOpacity(0.1),
+                            ? Colors.red.withValues(alpha: 0.1)
+                            : AppColors.primaryOrange.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -460,8 +460,8 @@ class _ProblematicAccountsScreenState extends State<ProblematicAccountsScreen>
                       ),
                       decoration: BoxDecoration(
                         color: status == 'suspended'
-                            ? Colors.red.withOpacity(0.1)
-                            : AppColors.primaryOrange.withOpacity(0.1),
+                            ? Colors.red.withValues(alpha: 0.1)
+                            : AppColors.primaryOrange.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(

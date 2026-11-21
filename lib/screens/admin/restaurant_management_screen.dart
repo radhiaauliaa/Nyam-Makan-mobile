@@ -283,7 +283,7 @@ class _RestaurantManagementScreenState extends State<RestaurantManagementScreen>
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: _getStatusColor(status).withOpacity(0.1),
+                    color: _getStatusColor(status).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(

@@ -12,6 +12,7 @@ import '../../services/menu_service.dart';
 import '../../utils/theme.dart';
 // import '../../widgets/custom_textfield.dart';
 import '../../widgets/PhoneNumberInput.dart';
+import '../../utils/helpers.dart';
 
 class ReservationScreen extends StatefulWidget {
   final Restaurant restaurant;
@@ -547,7 +548,7 @@ class _ReservationScreenState extends State<ReservationScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Container(
+      builder: (context) => SizedBox(
         // Beri height maksimal 80% dari screen height
         height: MediaQuery.of(context).size.height * 0.8,
         child: _buildMenuSelectionContent(),
@@ -804,7 +805,7 @@ class _ReservationScreenState extends State<ReservationScreen> {
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           );
-        }).toList(),
+        }),
         const SizedBox(height: 8),
         const Divider(),
 
@@ -853,6 +854,14 @@ class _ReservationScreenState extends State<ReservationScreen> {
               ),
             ],
           ),
+          if (_selectedPromo!.minimumOrder != null && _subtotal < _selectedPromo!.minimumOrder!)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                'Min. pembelian belum tercapai (Min. ${Helpers.formatCurrency(_selectedPromo!.minimumOrder!)})',
+                style: const TextStyle(color: Colors.red, fontSize: 12),
+              ),
+            ),
           const SizedBox(height: 8),
           const Divider(),
         ],

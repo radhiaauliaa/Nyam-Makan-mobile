@@ -47,7 +47,7 @@ class RestaurantCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
+                color: Colors.grey.withValues(alpha: 0.1),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -162,29 +162,34 @@ class RestaurantCard extends StatelessWidget {
                 ),
               ),
 
-              // Status Buka/Tutup di pojok kanan
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: restaurant.isOpen
-                      ? Colors.green.withOpacity(0.1)
-                      : Colors.red.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    color: restaurant.isOpen
-                        ? Colors.green.withOpacity(0.3)
-                        : Colors.red.withOpacity(0.3),
+              if (restaurant.isOpen != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: restaurant.isOpen == true
+                        ? Colors.green.withValues(alpha: 0.1)
+                        : Colors.red.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: restaurant.isOpen == true
+                          ? Colors.green.withValues(alpha: 0.3)
+                          : Colors.red.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Text(
+                    restaurant.isOpen == true ? 'Buka' : 'Tutup',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: restaurant.isOpen == true
+                          ? Colors.green
+                          : Colors.red,
+                    ),
                   ),
                 ),
-                child: Text(
-                  restaurant.isOpen ? 'Buka' : 'Tutup',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: restaurant.isOpen ? Colors.green : Colors.red,
-                  ),
-                ),
-              ),
             ],
           ),
         ),

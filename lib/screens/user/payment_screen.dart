@@ -23,10 +23,15 @@ class PaymentScreen extends StatefulWidget {
 class _PaymentScreenState extends State<PaymentScreen> {
   bool _isUploading = false;
   Restaurant? _restaurant;
+  String? _selectedPaymentMethod;
 
   @override
   void initState() {
     super.initState();
+    final savedMethod = widget.reservation.paymentMethod.toLowerCase();
+    if (savedMethod == 'transfer' || savedMethod == 'qris') {
+      _selectedPaymentMethod = savedMethod;
+    }
     _loadRestaurantData();
   }
 
@@ -222,7 +227,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
   Widget _buildPaymentMethods() {
     if (_restaurant == null) return const SizedBox();
 
-    // Check jika tidak ada metode pembayaran yang tersedia
     final bool hasTransfer =
         _restaurant!.accountNumber != null &&
         _restaurant!.accountNumber!.isNotEmpty;
@@ -270,16 +274,122 @@ class _PaymentScreenState extends State<PaymentScreen> {
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
         const SizedBox(height: 12),
-
-        // Transfer Manual
-        if (hasTransfer) _buildTransferMethod(),
-
+        if (hasTransfer)
+          _buildPaymentMethodOption(
+            method: 'transfer',
+            title: 'Transfer Manual',
+            subtitle: 'Transfer ke rekening bank restoran',
+            icon: Icons.account_balance,
+            color: Colors.blue,
+          ),
         if (hasTransfer && hasQRIS) const SizedBox(height: 12),
-
-        // QRIS
-        if (hasQRIS) _buildQRISMethod(),
+        if (hasQRIS)
+          _buildPaymentMethodOption(
+            method: 'qris',
+            title: 'Scan QRIS',
+            subtitle: 'Bayar dengan aplikasi e-wallet atau mobile banking',
+            icon: Icons.qr_code,
+            color: Colors.purple,
+          ),
+        if (_selectedPaymentMethod == 'transfer') ...[
+          const SizedBox(height: 16),
+          _buildTransferMethod(),
+        ],
+        if (_selectedPaymentMethod == 'qris') ...[
+          const SizedBox(height: 16),
+          _buildQRISMethod(),
+        ],
       ],
     );
+  }
+
+  Widget _buildPaymentMethodOption({
+    required String method,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+  }) {
+    final isSelected = _selectedPaymentMethod == method;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () => _selectPaymentMethod(method),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected ? color.withValues(alpha: 0.08) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? color : Colors.grey[300]!,
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: color),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  ),
+                ],
+              ),
+            ),
+            RadioGroup<String>(
+              groupValue: _selectedPaymentMethod,
+              onChanged: (value) {
+                if (value != null) _selectPaymentMethod(value);
+              },
+              child: Radio<String>(value: method, activeColor: color),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _selectPaymentMethod(String method) async {
+    setState(() {
+      _selectedPaymentMethod = method;
+    });
+
+    final reservationProvider = Provider.of<ReservationProvider>(
+      context,
+      listen: false,
+    );
+    final success = await reservationProvider.updatePaymentMethod(
+      widget.reservation.id,
+      method,
+    );
+
+    if (!success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Gagal menyimpan metode pembayaran'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Widget _buildTransferMethod() {
@@ -597,6 +707,28 @@ class _PaymentScreenState extends State<PaymentScreen> {
       return _buildExistingProof();
     }
 
+    if (_selectedPaymentMethod == null) {
+      return Card(
+        elevation: 1,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Icon(Icons.touch_app, color: Colors.grey[600]),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Pilih metode pembayaran terlebih dahulu untuk melanjutkan upload bukti.',
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -741,6 +873,16 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Future<void> _uploadPaymentProof() async {
+    if (_selectedPaymentMethod == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Pilih metode pembayaran terlebih dahulu'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
     // Show dialog untuk pilih sumber gambar
     final ImageSource? source = await showModalBottomSheet<ImageSource>(
       context: context,

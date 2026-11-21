@@ -7,11 +7,11 @@ class PhoneNumberInput extends StatefulWidget {
   final String? initialCountryCode;
   final String? initialPhoneNumber;
   const PhoneNumberInput({
-    Key? key,
+    super.key,
     required this.onChanged,
     this.initialCountryCode,
     this.initialPhoneNumber,
-  }) : super(key: key);
+  });
 
   @override
   State<PhoneNumberInput> createState() => _PhoneNumberInputState();

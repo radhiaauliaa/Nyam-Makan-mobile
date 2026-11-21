@@ -55,7 +55,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [AppColors.lightOrange!, AppColors.darkOrange!],
+                  colors: [AppColors.lightOrange, AppColors.darkOrange],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -66,7 +66,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
@@ -700,7 +700,7 @@ class _SwitchTile extends StatelessWidget {
       trailing: Switch(
         value: value,
         onChanged: onChanged,
-        activeColor: AppColors.primaryOrange,
+        activeThumbColor: AppColors.primaryOrange,
       ),
     );
   }

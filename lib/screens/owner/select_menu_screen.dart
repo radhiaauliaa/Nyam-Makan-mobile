@@ -47,7 +47,7 @@ class _SelectMenuScreenState extends State<SelectMenuScreen> {
         // Load menus for current restaurant
         // You might need to implement this method in your RestaurantProvider
         final menus = await restaurantProvider.getMenusByRestaurantId(
-          restaurant.id!,
+          restaurant.id,
         );
         setState(() {
           _allMenus = menus;
@@ -228,7 +228,7 @@ class _SelectMenuScreenState extends State<SelectMenuScreen> {
         border: Border(top: BorderSide(color: Colors.grey.shade300)),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
+            color: Colors.grey.withValues(alpha: 0.2),
             blurRadius: 8,
             offset: const Offset(0, -2),
           ),

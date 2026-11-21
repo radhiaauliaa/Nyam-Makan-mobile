@@ -26,7 +26,7 @@ class CustomBottomNavBar extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -66,7 +66,7 @@ class CustomBottomNavBar extends StatelessWidget {
             children: [
               Icon(
                 icon,
-                color: isActive ? Colors.white : Colors.white.withOpacity(0.5),
+                color: isActive ? Colors.white : Colors.white.withValues(alpha: 0.5),
                 size: 24,
               ),
               const SizedBox(height: 2),
@@ -75,7 +75,7 @@ class CustomBottomNavBar extends StatelessWidget {
                 style: TextStyle(
                   color: isActive
                       ? Colors.white
-                      : Colors.white.withOpacity(0.5),
+                      : Colors.white.withValues(alpha: 0.5),
                   fontSize: 11,
                   fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
                 ),

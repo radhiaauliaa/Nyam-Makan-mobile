@@ -138,6 +138,20 @@ class ReservationService {
     }
   }
 
+  Future<void> updatePaymentMethod(
+    String reservationId,
+    String paymentMethod,
+  ) async {
+    try {
+      await _firestore.collection('reservations').doc(reservationId).update({
+        'paymentMethod': paymentMethod,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw Exception('Gagal menyimpan metode pembayaran: $e');
+    }
+  }
+
   // Mark payment as verified
   Future<void> markPaymentVerified(String reservationId) async {
     try {

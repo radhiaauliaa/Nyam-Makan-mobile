@@ -121,8 +121,7 @@ class AuthProvider with ChangeNotifier {
 
             if (restoStatus == 'rejected') {
               message =
-                  'Pengajuan restoran "$restoName" ditolak.\n\n' +
-                  'Akun Anda telah dinonaktifkan.\n\n' +
+                  'Pengajuan restoran "$restoName" ditolak.\n\n' 'Akun Anda telah dinonaktifkan.\n\n' +
                   'Silakan hubungi admin untuk informasi lebih lanjut: admin@nyammakan.com';
             }
           }
@@ -325,8 +324,9 @@ class AuthProvider with ChangeNotifier {
   // providers/auth_provider.dart - tambahkan method ini
   Future<bool> hasRestaurant() async {
     if (_user == null ||
-        (_user!.role != 'owner' && _user!.role != 'Pemilik Resto'))
+        (_user!.role != 'owner' && _user!.role != 'Pemilik Resto')) {
       return false;
+    }
 
     try {
       final querySnapshot = await _firestore

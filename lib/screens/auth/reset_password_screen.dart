@@ -45,7 +45,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
+                  color: Colors.green.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -116,7 +116,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
+                  color: Colors.red.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -257,7 +257,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                     Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: AppColors.primaryOrange.withOpacity(0.1),
+                        color: AppColors.primaryOrange.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Icon(
@@ -442,7 +442,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primaryOrange,
                                 disabledBackgroundColor: AppColors.primaryOrange
-                                    .withOpacity(0.5),
+                                    .withValues(alpha: 0.5),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16),
                                 ),

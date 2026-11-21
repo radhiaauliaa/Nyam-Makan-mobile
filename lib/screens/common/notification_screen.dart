@@ -253,7 +253,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                 decoration: BoxDecoration(
                   color: _getNotificationColor(
                     notification.type,
-                  ).withOpacity(0.1),
+                  ).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(

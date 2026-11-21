@@ -23,7 +23,7 @@ class OwnerBottomNavBar extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, -3),
           ),
@@ -54,7 +54,7 @@ class OwnerBottomNavBar extends StatelessWidget {
         children: [
           Icon(
             icon,
-            color: isSelected ? Colors.white : Colors.white.withOpacity(0.5),
+            color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.5),
             size: 24,
           ),
           const SizedBox(height: 4),
@@ -62,7 +62,7 @@ class OwnerBottomNavBar extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 12,
-              color: isSelected ? Colors.white : Colors.white.withOpacity(0.5),
+              color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.5),
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             ),
           ),

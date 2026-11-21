@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../models/restaurant_model.dart';
-import '../../services/restaurant_service.dart';
 import '../../services/cloudinary_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/restaurant_provider.dart';

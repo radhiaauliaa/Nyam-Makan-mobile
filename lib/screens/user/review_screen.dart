@@ -8,6 +8,7 @@ import '../../providers/auth_provider.dart';
 import '../../widgets/menu_item_card.dart';
 import '../../services/notification_service.dart';
 import '../../services/report_service.dart';
+import '../../services/review_service.dart';
 import '../../utils/theme.dart';
 
 class ReviewScreen extends StatefulWidget {
@@ -231,7 +232,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
             children: _selectedMenus.map((menu) {
               return Chip(
                 label: Text(menu),
-                backgroundColor: AppColors.primaryOrange.withOpacity(0.1),
+                backgroundColor: AppColors.primaryOrange.withValues(alpha: 0.1),
                 onDeleted: () {
                   setState(() {
                     _selectedMenus.remove(menu);
@@ -438,6 +439,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
           .doc(review.id)
           .set(review.toMap());
 
+      // Update rating & totalReviews restoran di Firestore secara otomatis
+      await ReviewService().updateRestaurantRating(widget.restaurant.id);
+
       // SEND NOTIFICATION to restaurant owner - Get ownerId from restaurant doc
       final notificationService = NotificationService();
       final restaurantDoc = await FirebaseFirestore.instance
@@ -553,8 +557,8 @@ class _ReviewScreenState extends State<ReviewScreen> {
                       children: selected.map((menuName) {
                         return Chip(
                           label: Text(menuName),
-                          backgroundColor: AppColors.primaryOrange.withOpacity(
-                            0.1,
+                          backgroundColor: AppColors.primaryOrange.withValues(
+                            alpha: 0.1,
                           ),
                           onDeleted: () {
                             setModalState(() {

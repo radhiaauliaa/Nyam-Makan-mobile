@@ -8,7 +8,7 @@ import '../../models/restaurant_model.dart';
 import '../../providers/restaurant_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/cloudinary_service.dart';
-import 'add_promo_screen.dart';
+import 'manage_promo_screen.dart';
 
 class EditRestaurantScreen extends StatefulWidget {
   const EditRestaurantScreen({super.key});
@@ -29,7 +29,7 @@ class _EditRestaurantScreenState extends State<EditRestaurantScreen> {
   bool _isUploadingImage = false;
   bool _isUploadingMenuImage = false;
   List<String> _newImages = []; // Images restoran yang baru diupload
-  List<String> _menuImages = []; // Images menu yang baru diupload
+  final List<String> _menuImages = []; // Images menu yang baru diupload
 
   @override
   void initState() {
@@ -278,14 +278,19 @@ class _EditRestaurantScreenState extends State<EditRestaurantScreen> {
                 'Promo Resto',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
               ),
-              IconButton(
-                icon: const Icon(Icons.add, color: AppColors.primaryOrange),
+              TextButton.icon(
+                icon: const Icon(Icons.settings, size: 16),
+                label: const Text('Kelola Promo', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.primaryOrange,
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                ),
                 onPressed: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) =>
-                          AddPromoScreen(restaurant: _restaurant),
+                          ManagePromoScreen(restaurant: _restaurant),
                     ),
                   );
                 },
@@ -293,26 +298,64 @@ class _EditRestaurantScreenState extends State<EditRestaurantScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          // Placeholder for existing promos - you can fetch from Firestore later
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Row(
-              children: [
-                Icon(
-                  Icons.local_offer,
-                  color: AppColors.primaryOrange,
-                  size: 20,
+          InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      ManagePromoScreen(restaurant: _restaurant),
                 ),
-                SizedBox(width: 8),
-                Text(
-                  'Tambah promo dengan menekan tombol +',
-                  style: TextStyle(color: Colors.grey, fontSize: 12),
-                ),
-              ],
+              );
+            },
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.lightOrange.withValues(alpha: 0.3),
+                border: Border.all(color: AppColors.primaryOrange.withValues(alpha: 0.4)),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryOrange,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.local_offer,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Sistem Promo Terintegrasi',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Atur diskon menu & voucher reservasi secara otomatis',
+                          style: TextStyle(color: Colors.black54, fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(
+                    Icons.chevron_right,
+                    color: AppColors.primaryOrange,
+                  ),
+                ],
+              ),
             ),
           ),
         ],

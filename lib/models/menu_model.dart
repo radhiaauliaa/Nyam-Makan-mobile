@@ -8,6 +8,7 @@ class Menu {
   final String description;
   final double price;
   final double? originalPrice;
+  final String? activePromoId;
   final String category;
   final List<String> images;
   final String? imageUrl;
@@ -26,6 +27,7 @@ class Menu {
     required this.description,
     required this.price,
     this.originalPrice,
+    this.activePromoId,
     required this.category,
     required this.images,
     this.imageUrl,
@@ -37,8 +39,18 @@ class Menu {
     required this.createdAt,
     required this.updatedAt,
   });
- 
+
   factory Menu.fromMap(Map<String, dynamic> map) {
+    final rawImages = map['images'];
+    final images = rawImages is List
+        ? rawImages
+              .whereType<Object>()
+              .map((image) => image.toString())
+              .where((image) => image.isNotEmpty)
+              .toList()
+        : <String>[];
+    final rawImageUrl = map['imageUrl']?.toString();
+
     return Menu(
       id: map['id'] ?? '',
       restaurantId: map['restaurantId'] ?? '',
@@ -50,8 +62,12 @@ class Menu {
       originalPrice: map['originalPrice'] != null
           ? (map['originalPrice'] as num).toDouble()
           : null,
+      activePromoId: map['activePromoId'],
       category: map['category'] ?? '',
-      images: List<String>.from(map['images'] ?? []),
+      images: images,
+      imageUrl: rawImageUrl != null && rawImageUrl.isNotEmpty
+          ? rawImageUrl
+          : (images.isNotEmpty ? images.first : null),
       isPopular: map['isPopular'] ?? false,
       rating: (map['rating'] ?? 0.0).toDouble(),
       reviewCount: map['reviewCount'] ?? 0,
@@ -68,7 +84,6 @@ class Menu {
     );
   }
 
-
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -77,6 +92,7 @@ class Menu {
       'description': description,
       'price': price,
       'originalPrice': originalPrice,
+      'activePromoId': activePromoId,
       'category': category,
       'images': images,
       'imageUrl': imageUrl,
@@ -90,11 +106,16 @@ class Menu {
     };
   }
 
+  /// True jika menu sedang dalam promo (harga coretan aktif)
   bool get hasDiscount => originalPrice != null && originalPrice! > price;
+
+  /// Persentase diskon yang sedang berlaku
   double get discountPercentage {
     if (originalPrice == null || originalPrice! <= price) return 0.0;
     return ((originalPrice! - price) / originalPrice!) * 100;
   }
 
-  String? get mainImage => images.isNotEmpty ? images.first : null;
+  String? get mainImage => images.isNotEmpty
+      ? images.first
+      : (imageUrl != null && imageUrl!.isNotEmpty ? imageUrl : null);
 }

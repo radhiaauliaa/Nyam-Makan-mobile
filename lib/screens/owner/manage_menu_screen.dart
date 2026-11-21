@@ -315,6 +315,8 @@ class _ManageMenuScreenState extends State<ManageMenuScreen> {
   }
 
   Widget _buildMenuItemCard(Menu menuItem) {
+    final menuImageUrl = menuItem.mainImage;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       color: Colors.white,
@@ -330,14 +332,14 @@ class _ManageMenuScreenState extends State<ManageMenuScreen> {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
                 color: Colors.grey[200],
-                image: menuItem.images.isNotEmpty
+                image: menuImageUrl != null
                     ? DecorationImage(
-                        image: NetworkImage(menuItem.images.first),
+                        image: NetworkImage(menuImageUrl),
                         fit: BoxFit.cover,
                       )
                     : null,
               ),
-              child: menuItem.images.isEmpty
+              child: menuImageUrl == null
                   ? const Icon(Icons.fastfood, color: Colors.grey, size: 40)
                   : null,
             ),
@@ -638,11 +640,8 @@ class _AddEditMenuDialogState extends State<AddEditMenuDialog> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
-  final TextEditingController _originalPriceController =
-      TextEditingController();
   final TextEditingController _categoryController = TextEditingController();
 
-  bool _hasPromo = false;
   List<String> _uploadedImages = []; // URL gambar dari Cloudinary
   final ImagePicker _picker = ImagePicker();
   bool _isUploading = false;
@@ -654,10 +653,7 @@ class _AddEditMenuDialogState extends State<AddEditMenuDialog> {
       _nameController.text = widget.menuItem!.name;
       _descriptionController.text = widget.menuItem!.description;
       _priceController.text = widget.menuItem!.price.toInt().toString();
-      _originalPriceController.text =
-          widget.menuItem!.originalPrice?.toInt().toString() ?? '';
       _categoryController.text = widget.menuItem!.category;
-      _hasPromo = widget.menuItem!.hasDiscount;
       _uploadedImages = widget.menuItem!.images; // Load existing image
     }
   }
@@ -812,27 +808,37 @@ class _AddEditMenuDialogState extends State<AddEditMenuDialog> {
                 'Contoh: Ramen, Minuman',
               ),
 
-              // Promo Toggle
-              Row(
-                children: [
-                  Checkbox(
-                    value: _hasPromo,
-                    onChanged: (value) {
-                      setState(() {
-                        _hasPromo = value!;
-                      });
-                    },
+              // Promo Info Banner (jika menu sedang dalam promo aktif)
+              if (widget.menuItem != null && widget.menuItem!.hasDiscount)
+                Container(
+                  margin: const EdgeInsets.symmetric(vertical: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.lightOrange.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: AppColors.primaryOrange.withValues(alpha: 0.5),
+                    ),
                   ),
-                  const Text('Ada Promo'),
-                ],
-              ),
-
-              if (_hasPromo)
-                _buildTextField(
-                  _originalPriceController,
-                  'Harga Asli',
-                  'Isikan harga sebelum promo',
-                  TextInputType.number,
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.local_offer,
+                        color: AppColors.primaryOrange,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Menu ini sedang aktif promo (${widget.menuItem!.discountPercentage.toInt()}% OFF). Kelola diskon melalui menu Kelola Promo.',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.darkOrange,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
 
               const SizedBox(height: 16),
@@ -1103,9 +1109,8 @@ class _AddEditMenuDialogState extends State<AddEditMenuDialog> {
       name: _nameController.text,
       description: _descriptionController.text,
       price: double.tryParse(_priceController.text) ?? 0.0,
-      originalPrice: _hasPromo && _originalPriceController.text.isNotEmpty
-          ? (double.tryParse(_originalPriceController.text) ?? 0.0)
-          : null,
+      originalPrice: widget.menuItem?.originalPrice,
+      activePromoId: widget.menuItem?.activePromoId,
       category: _categoryController.text,
       images: _uploadedImages,
       isPopular: widget.menuItem?.isPopular ?? false,

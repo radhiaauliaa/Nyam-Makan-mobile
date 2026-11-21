@@ -48,7 +48,7 @@ class ReviewService {
           .set(review.toMap());
       
       // Update restaurant rating
-      await _updateRestaurantRating(review.restaurantId);
+      await updateRestaurantRating(review.restaurantId);
     } catch (e) {
       throw Exception('Gagal menambah ulasan: $e');
     }
@@ -63,7 +63,7 @@ class ReviewService {
           .update(review.toMap());
       
       // Update restaurant rating
-      await _updateRestaurantRating(review.restaurantId);
+      await updateRestaurantRating(review.restaurantId);
     } catch (e) {
       throw Exception('Gagal update ulasan: $e');
     }
@@ -78,7 +78,7 @@ class ReviewService {
           .delete();
       
       // Update restaurant rating
-      await _updateRestaurantRating(restaurantId);
+      await updateRestaurantRating(restaurantId);
     } catch (e) {
       throw Exception('Gagal menghapus ulasan: $e');
     }
@@ -99,14 +99,17 @@ class ReviewService {
     }
   }
 
-  // Update restaurant rating
-  Future<void> _updateRestaurantRating(String restaurantId) async {
+  // Update restaurant rating & totalReviews berdasarkan seluruh ulasan yang ada di database
+  Future<void> updateRestaurantRating(String restaurantId) async {
     try {
       QuerySnapshot snapshot = await _firestore
           .collection('reviews')
           .where('restaurantId', isEqualTo: restaurantId)
           .get();
       
+      double averageRating = 0.0;
+      int totalReviews = snapshot.docs.length;
+
       if (snapshot.docs.isNotEmpty) {
         double totalRating = 0;
         for (var doc in snapshot.docs) {
@@ -114,18 +117,17 @@ class ReviewService {
           totalRating += (data['rating'] ?? 0).toDouble();
         }
         
-        double averageRating = totalRating / snapshot.docs.length;
-        int totalReviews = snapshot.docs.length;
-        
-        await _firestore
-            .collection('restaurants')
-            .doc(restaurantId)
-            .update({
-              'rating': averageRating,
-              'totalReviews': totalReviews,
-              'updatedAt': Timestamp.now(),
-            });
+        averageRating = double.parse((totalRating / totalReviews).toStringAsFixed(1));
       }
+
+      await _firestore
+          .collection('restaurants')
+          .doc(restaurantId)
+          .update({
+            'rating': averageRating,
+            'totalReviews': totalReviews,
+            'updatedAt': Timestamp.now(),
+          });
     } catch (e) {
       throw Exception('Gagal update rating restoran: $e');
     }

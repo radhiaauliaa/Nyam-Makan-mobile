@@ -356,7 +356,7 @@ class _ManageReservationScreenState extends State<ManageReservationScreen>
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
+                    color: statusColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
@@ -991,7 +991,7 @@ class _ManageReservationScreenState extends State<ManageReservationScreen>
               const Text('Pilih alasan penolakan:'),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
-                value: selectedReason,
+                initialValue: selectedReason,
                 decoration: const InputDecoration(
                   border: OutlineInputBorder(),
                   contentPadding: EdgeInsets.symmetric(
@@ -1300,7 +1300,7 @@ class _ManageReservationScreenState extends State<ManageReservationScreen>
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             spreadRadius: 0,
             blurRadius: 10,
             offset: const Offset(0, -3),
@@ -1351,7 +1351,7 @@ class _ManageReservationScreenState extends State<ManageReservationScreen>
         children: [
           Icon(
             icon,
-            color: isSelected ? Colors.white : Colors.white.withOpacity(0.5),
+            color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.5),
             size: 24,
           ),
           const SizedBox(height: 4),
@@ -1359,7 +1359,7 @@ class _ManageReservationScreenState extends State<ManageReservationScreen>
             label,
             style: TextStyle(
               fontSize: 12,
-              color: isSelected ? Colors.white : Colors.white.withOpacity(0.5),
+              color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.5),
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             ),
           ),
@@ -1548,7 +1548,7 @@ class _ReservationDetailScreen extends StatelessWidget {
                         ],
                       ),
                     );
-                  }).toList(),
+                  }),
                 ],
               ),
             ),

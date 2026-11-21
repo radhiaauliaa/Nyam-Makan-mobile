@@ -35,7 +35,7 @@ class MenuService {
       return docRef.id;
     } catch (e) {
       print('Error creating menu: $e');
-      throw e;
+      rethrow;
     }
   }
 
@@ -48,7 +48,7 @@ class MenuService {
           .update(menu.toMap());
     } catch (e) {
       print('Error updating menu: $e');
-      throw e;
+      rethrow;
     }
   }
 
@@ -58,7 +58,7 @@ class MenuService {
       await _firestore.collection('menus').doc(menuId).delete();
     } catch (e) {
       print('Error deleting menu: $e');
-      throw e;
+      rethrow;
     }
   }
 }

@@ -47,11 +47,11 @@ class RestaurantProvider with ChangeNotifier {
     try {
       _restaurants = await _restaurantService.getRestaurants();
       print('Loaded ${_restaurants.length} restaurants');
-      _restaurants.forEach((r) {
+      for (var r in _restaurants) {
         print(
           'Restaurant: ${r.name}, Categories: ${r.categories}, Images: ${r.images}',
         );
-      });
+      }
       _isLoading = false;
       notifyListeners();
     } catch (e) {
