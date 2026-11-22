@@ -11,14 +11,7 @@ class RestaurantCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Fallback untuk data yang mungkin kosong
-    final restaurantName = restaurant.name.isEmpty
-        ? 'Tanpa Nama'
-        : restaurant.name;
-    final restaurantCategory = restaurant.category.isEmpty
-        ? 'Restoran'
-        : restaurant.category;
-    final imageUrl = restaurant.imageUrl ?? 'https://via.placeholder.com/80';
+    final imageUrl = restaurant.mainImageUrl;
     final rating = restaurant.rating;
     final totalReviews = restaurant.totalReviews;
     final distance = restaurant.distance;
@@ -56,85 +49,107 @@ class RestaurantCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Image section
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  color: Colors.grey[300],
-                  image: imageUrl.isNotEmpty
-                      ? DecorationImage(
-                          image: NetworkImage(imageUrl),
-                          fit: BoxFit.cover,
-                        )
-                      : null,
-                ),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
                 child: imageUrl.isEmpty
-                    ? const Icon(Icons.restaurant, color: Colors.grey, size: 30)
-                    : null,
+                    ? Container(
+                        width: 80,
+                        height: 80,
+                        color: Colors.grey[300],
+                        child: const Icon(
+                          Icons.restaurant,
+                          color: Colors.grey,
+                          size: 30,
+                        ),
+                      )
+                    : Image.network(
+                        imageUrl,
+                        width: 80,
+                        height: 80,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          width: 80,
+                          height: 80,
+                          color: Colors.grey[300],
+                          child: const Icon(
+                            Icons.restaurant,
+                            color: Colors.grey,
+                            size: 30,
+                          ),
+                        ),
+                      ),
               ),
               const SizedBox(width: 12),
 
-              // Info section
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      restaurantName,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                    if (restaurant.name.isNotEmpty)
+                      Text(
+                        restaurant.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      restaurantCategory,
-                      style: const TextStyle(color: Colors.grey, fontSize: 12),
-                    ),
+                    if (restaurant.category.isNotEmpty)
+                      Text(
+                        restaurant.category,
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 12,
+                        ),
+                      ),
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        const Icon(
-                          Icons.star,
-                          color: AppColors.primaryOrange,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '$rating ($totalReviews)',
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                        const SizedBox(width: 12),
-                        const Icon(
-                          Icons.location_on,
-                          color: Colors.grey,
-                          size: 14,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${distance}km',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
+                        if (rating > 0 && totalReviews > 0) ...[
+                          const Icon(
+                            Icons.star,
+                            color: AppColors.primaryOrange,
+                            size: 16,
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        const Icon(
-                          Icons.access_time,
-                          color: Colors.grey,
-                          size: 14,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${estimatedTime}min',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
+                          const SizedBox(width: 4),
+                          Text(
+                            '$rating ($totalReviews)',
+                            style: const TextStyle(fontSize: 12),
                           ),
-                        ),
+                          const SizedBox(width: 12),
+                        ],
+                        if (distance > 0) ...[
+                          const Icon(
+                            Icons.location_on,
+                            color: Colors.grey,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${distance}km',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                        ],
+                        if (estimatedTime > 0) ...[
+                          const Icon(
+                            Icons.access_time,
+                            color: Colors.grey,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${estimatedTime}min',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                     if (discount > 0) ...[
@@ -170,13 +185,13 @@ class RestaurantCard extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: restaurant.isOpen == true
-                        ? Colors.green.withValues(alpha: 0.1)
-                        : Colors.red.withValues(alpha: 0.1),
+                        ? Colors.green.withOpacity(0.1)
+                        : Colors.red.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(
                       color: restaurant.isOpen == true
-                          ? Colors.green.withValues(alpha: 0.3)
-                          : Colors.red.withValues(alpha: 0.3),
+                          ? Colors.green.withOpacity(0.3)
+                          : Colors.red.withOpacity(0.3),
                     ),
                   ),
                   child: Text(

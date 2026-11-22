@@ -164,12 +164,14 @@ class _ManageMenuScreenState extends State<ManageMenuScreen> {
     return Consumer<RestaurantProvider>(
       builder: (context, restaurantProvider, _) {
         final restaurant = restaurantProvider.currentRestaurant;
-        final restaurantName = restaurant?.name ?? 'Nama Restoran';
-        final restaurantAddress = restaurant?.address ?? 'Alamat restoran';
-        final restaurantCategory = restaurant?.categories.isNotEmpty == true
-            ? restaurant!.categories.join(', ')
-            : 'Kategori restoran';
-        final restaurantRating = restaurant?.rating.toString() ?? '4.9';
+        final restaurantName = restaurant?.name ?? '';
+        final restaurantAddress = restaurant?.address ?? '';
+        final restaurantImageUrl = restaurant?.mainImageUrl ?? '';
+        final restaurantCategory = restaurant?.categories.join(', ') ?? '';
+        final hasRating =
+            restaurant != null &&
+            restaurant.rating > 0 &&
+            restaurant.totalReviews > 0;
 
         return Container(
           padding: const EdgeInsets.all(16),
@@ -185,14 +187,14 @@ class _ManageMenuScreenState extends State<ManageMenuScreen> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
                   color: Colors.grey[300],
-                  image: restaurant?.images.isNotEmpty == true
+                  image: restaurantImageUrl.isNotEmpty
                       ? DecorationImage(
-                          image: NetworkImage(restaurant!.images.first),
+                          image: NetworkImage(restaurantImageUrl),
                           fit: BoxFit.cover,
                         )
                       : null,
                 ),
-                child: restaurant?.images.isEmpty != false
+                child: restaurantImageUrl.isEmpty
                     ? const Icon(Icons.restaurant, color: Colors.grey)
                     : null,
               ),
@@ -201,23 +203,40 @@ class _ManageMenuScreenState extends State<ManageMenuScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      restaurantName,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                    if (restaurantName.isNotEmpty)
+                      Text(
+                        restaurantName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      restaurantAddress,
-                      style: const TextStyle(color: Colors.grey, fontSize: 12),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '$restaurantCategory • $restaurantRating ⭐',
-                      style: const TextStyle(color: Colors.grey, fontSize: 12),
-                    ),
+                    if (restaurantAddress.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        restaurantAddress,
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                    if (restaurantCategory.isNotEmpty || hasRating) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        [
+                          if (restaurantCategory.isNotEmpty) restaurantCategory,
+                          if (restaurant != null &&
+                              restaurant.rating > 0 &&
+                              restaurant.totalReviews > 0)
+                            '${restaurant.rating} ⭐ (${restaurant.totalReviews})',
+                        ].join(' • '),
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -844,9 +863,12 @@ class _AddEditMenuDialogState extends State<AddEditMenuDialog> {
               const SizedBox(height: 16),
 
               // Foto Menu
-              const Text('Foto Menu', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text(
+                'Foto Menu',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 8),
-              
+
               if (_uploadedImages.isNotEmpty) ...[
                 // Grid untuk multiple images
                 GridView.builder(
@@ -872,7 +894,7 @@ class _AddEditMenuDialogState extends State<AddEditMenuDialog> {
                 const Text('Mengupload gambar...', textAlign: TextAlign.center),
                 const SizedBox(height: 12),
               ],
-              
+
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -891,7 +913,7 @@ class _AddEditMenuDialogState extends State<AddEditMenuDialog> {
                   ),
                 ),
               ),
-              
+
               if (_uploadedImages.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Row(
@@ -899,7 +921,10 @@ class _AddEditMenuDialogState extends State<AddEditMenuDialog> {
                     Expanded(
                       child: Text(
                         '✅ ${_uploadedImages.length} gambar terupload',
-                        style: TextStyle(fontSize: 12, color: Colors.green[700]),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.green[700],
+                        ),
                       ),
                     ),
                     TextButton(
@@ -1013,7 +1038,7 @@ class _AddEditMenuDialogState extends State<AddEditMenuDialog> {
                   child: CircularProgressIndicator(
                     value: loadingProgress.expectedTotalBytes != null
                         ? loadingProgress.cumulativeBytesLoaded /
-                            loadingProgress.expectedTotalBytes!
+                              loadingProgress.expectedTotalBytes!
                         : null,
                   ),
                 );
@@ -1048,7 +1073,6 @@ class _AddEditMenuDialogState extends State<AddEditMenuDialog> {
       ],
     );
   }
-
 
   // Di method _saveMenu di AddEditMenuDialog:
 
@@ -1085,7 +1109,8 @@ class _AddEditMenuDialogState extends State<AddEditMenuDialog> {
       return;
     }
 
-    if (_uploadedImages.isEmpty) { // PERUBAHAN: validasi images
+    if (_uploadedImages.isEmpty) {
+      // PERUBAHAN: validasi images
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Mohon upload minimal 1 gambar menu'),

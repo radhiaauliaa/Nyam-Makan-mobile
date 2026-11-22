@@ -11,10 +11,14 @@ class ChatbotScreen extends StatefulWidget {
 }
 
 class _ChatMessage {
+<<<<<<< HEAD
   const _ChatMessage({
     required this.text,
     required this.isUser,
   });
+=======
+  const _ChatMessage({required this.text, required this.isUser});
+>>>>>>> BE
 
   final String text;
   final bool isUser;
@@ -56,17 +60,27 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       final response = await _chatbotService.sendMessage(question);
       if (!mounted) return;
       setState(() {
+<<<<<<< HEAD
         _messages.add(_ChatMessage(text: response.trim(), isUser: false));
+=======
+        _messages.add(
+          _ChatMessage(text: _cleanChatbotResponse(response), isUser: false),
+        );
+>>>>>>> BE
       });
     } catch (error) {
       if (!mounted) return;
       setState(() {
+<<<<<<< HEAD
         _messages.add(
           _ChatMessage(
             text: _readableError(error),
             isUser: false,
           ),
         );
+=======
+        _messages.add(_ChatMessage(text: _readableError(error), isUser: false));
+>>>>>>> BE
       });
     } finally {
       if (mounted) {
@@ -84,6 +98,18 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     return 'Maaf, aku belum bisa menjawab sekarang.\n$message';
   }
 
+<<<<<<< HEAD
+=======
+  String _cleanChatbotResponse(String response) {
+    return response
+        .trim()
+        .replaceAllMapped(
+          RegExp(r'\*{1,2}([^*\n]+?)\*{1,2}'),
+          (match) => match[1]!,
+        );
+  }
+
+>>>>>>> BE
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scrollController.hasClients) return;
@@ -117,8 +143,16 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
             child: ListView.builder(
               controller: _scrollController,
               padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
+<<<<<<< HEAD
               itemCount: _messages.length,
               itemBuilder: (context, index) {
+=======
+              itemCount: _messages.length + (_isSending ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (index == _messages.length && _isSending) {
+                  return const _TypingIndicator();
+                }
+>>>>>>> BE
                 final message = _messages[index];
                 return _MessageBubble(message: message);
               },
@@ -200,8 +234,12 @@ class _MessageBubble extends StatelessWidget {
     final textColor = message.isUser ? Colors.white : Colors.black87;
 
     return Align(
+<<<<<<< HEAD
       alignment:
           message.isUser ? Alignment.centerRight : Alignment.centerLeft,
+=======
+      alignment: message.isUser ? Alignment.centerRight : Alignment.centerLeft,
+>>>>>>> BE
       child: Container(
         constraints: const BoxConstraints(maxWidth: 320),
         margin: const EdgeInsets.only(bottom: 12),
@@ -233,6 +271,52 @@ class _MessageBubble extends StatelessWidget {
   }
 }
 
+<<<<<<< HEAD
+=======
+class _TypingIndicator extends StatelessWidget {
+  const _TypingIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(18),
+            topRight: Radius.circular(18),
+            bottomRight: Radius.circular(18),
+            bottomLeft: Radius.circular(4),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            SizedBox(width: 10),
+            Text('Sedang mengetik...'),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+>>>>>>> BE
 class _SuggestionRow extends StatelessWidget {
   const _SuggestionRow({required this.onSelected});
 
@@ -240,7 +324,15 @@ class _SuggestionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+<<<<<<< HEAD
     const suggestions = ['Cari promo', 'Rekomendasi menu', 'Cek reservasi saya'];
+=======
+    const suggestions = [
+      'Cari promo',
+      'Rekomendasi menu',
+      'Cek reservasi saya',
+    ];
+>>>>>>> BE
 
     return SizedBox(
       height: 48,

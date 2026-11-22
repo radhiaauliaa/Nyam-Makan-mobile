@@ -7,6 +7,20 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  String _normalizeRole(String role) {
+    switch (role) {
+      case 'owner':
+      case 'Pemilik Restoran':
+        return 'Pemilik Resto';
+      case 'user':
+        return 'Pengguna';
+      case 'admin':
+        return 'Admin';
+      default:
+        return role;
+    }
+  }
+
   // Get current user stream
   Stream<UserModel?> get currentUser {
     return _auth.authStateChanges().asyncMap((user) async {
@@ -18,21 +32,25 @@ class AuthService {
   }
 
   // Login user
-  Future<UserModel?> login(String email, String password, String role) async {
+  Future<UserModel?> login(String email, String password) async {
     try {
       UserCredential userCredential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
-      
+
       UserModel? user = await _getUserData(userCredential.user!.uid);
-      
-      if (user != null && user.role == role) {
-        return user;
-      } else {
+
+      if (user == null) {
         await _auth.signOut();
-        throw Exception('Role tidak sesuai');
+        throw Exception('Data akun tidak ditemukan.');
       }
+      final role = _normalizeRole(user.role);
+      if (!['Pengguna', 'Pemilik Resto', 'Admin'].contains(role)) {
+        await _auth.signOut();
+        throw Exception('Role akun tidak valid.');
+      }
+      return user.copyWith(role: role);
     } on FirebaseAuthException catch (e) {
       throw Exception(_getAuthErrorMessage(e.code));
     } catch (e) {
@@ -41,13 +59,16 @@ class AuthService {
   }
 
   // Register user
-  Future<UserModel> register(String email, String password, String username, String role) async {
+  Future<UserModel> register(
+    String email,
+    String password,
+    String username,
+    String role,
+  ) async {
     try {
-      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      
+      UserCredential userCredential = await _auth
+          .createUserWithEmailAndPassword(email: email, password: password);
+
       UserModel user = UserModel(
         id: userCredential.user!.uid,
         username: username,
@@ -56,12 +77,9 @@ class AuthService {
         status: 'active',
         createdAt: DateTime.now(),
       );
-      
-      await _firestore
-          .collection('users')
-          .doc(user.id)
-          .set(user.toMap());
-      
+
+      await _firestore.collection('users').doc(user.id).set(user.toMap());
+
       return user;
     } on FirebaseAuthException catch (e) {
       throw Exception(_getAuthErrorMessage(e.code));
@@ -82,7 +100,7 @@ class AuthService {
           .collection('users')
           .doc(userId)
           .get();
-      
+
       if (userDoc.exists) {
         return UserModel.fromMap(userDoc.data() as Map<String, dynamic>);
       }
@@ -106,10 +124,7 @@ class AuthService {
   // Update user profile
   Future<void> updateProfile(UserModel user) async {
     try {
-      await _firestore
-          .collection('users')
-          .doc(user.id)
-          .update(user.toMap());
+      await _firestore.collection('users').doc(user.id).update(user.toMap());
     } catch (e) {
       throw Exception('Gagal update profil: $e');
     }

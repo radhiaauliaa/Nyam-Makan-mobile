@@ -19,7 +19,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
-  String _selectedRole = 'Pengguna'; // Default role
 
   bool _isLoading = false;
   bool _obscurePassword = true;
@@ -33,10 +32,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _showErrorDialog(String title, String message) {
     // Detect if this is a suspension/rejection message
-    final isSuspension = message.contains('ditolak') || 
-                        message.contains('dinonaktifkan') ||
-                        message.contains('ditangguhkan');
-    
+    final isSuspension =
+        message.contains('ditolak') ||
+        message.contains('dinonaktifkan') ||
+        message.contains('ditangguhkan');
+
     showDialog(
       context: context,
       barrierDismissible: false, // Tidak bisa dismiss dengan tap di luar
@@ -54,7 +54,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 color: isSuspension ? Colors.red : AppColors.primaryOrange,
               ),
               const SizedBox(height: 16),
-              
+
               // Title
               Text(
                 title,
@@ -66,7 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
-              
+
               // Message
               Container(
                 padding: const EdgeInsets.all(12),
@@ -78,13 +78,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   message,
                   style: TextStyle(
                     fontSize: 14,
-                    color: isSuspension ? Colors.red[900] : AppColors.primaryOrange,
+                    color: isSuspension
+                        ? Colors.red[900]
+                        : AppColors.primaryOrange,
                     height: 1.5,
                   ),
                   textAlign: TextAlign.center,
                 ),
               ),
-              
+
               // Contact info untuk suspension
               if (isSuspension) ...[
                 const SizedBox(height: 16),
@@ -99,7 +101,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.info_outline, size: 16, color: Colors.blue[700]),
+                          Icon(
+                            Icons.info_outline,
+                            size: 16,
+                            color: Colors.blue[700],
+                          ),
                           const SizedBox(width: 8),
                           const Expanded(
                             child: Text(
@@ -115,26 +121,25 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 8),
                       Text(
                         'Hubungi admin di:\nadmin@nyammakan.com',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.blue[800],
-                        ),
+                        style: TextStyle(fontSize: 11, color: Colors.blue[800]),
                         textAlign: TextAlign.center,
                       ),
                     ],
                   ),
                 ),
               ],
-              
+
               const SizedBox(height: 24),
-              
+
               // Button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: isSuspension ? Colors.red : AppColors.primaryOrange,
+                    backgroundColor: isSuspension
+                        ? Colors.red
+                        : AppColors.primaryOrange,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
@@ -163,53 +168,20 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final requestedRole = _selectedRole;
 
       print('🔄 Attempting login with: ${_usernameController.text}');
 
       await authProvider.login(
         _usernameController.text.trim(),
         _passwordController.text.trim(),
-        requestedRole,
       );
 
-      // Debug: Check auth state
-      print(
-        '🔍 After login - isAuthenticated: ${authProvider.isAuthenticated}',
-      );
-      print('🔍 After login - user: ${authProvider.user?.username}');
-      print('🔍 After login - user role: ${authProvider.user?.role}');
-
-      // Gunakan role dari provider yang sudah di-load
-      final actualRole = authProvider.user?.role;
-
-      if (actualRole == 'Pengguna') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
-        );
-      } else if (actualRole == 'Pemilik Resto') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const OwnerHomeScreen()),
-        );
-      } else if (actualRole == 'Admin') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const AdminHomeScreen()),
-        );
-      } else {
-        print('❌ Unknown role: $actualRole');
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
-        );
-      }
+      if (!mounted) return;
+      _navigateToRole(authProvider.user?.role);
     } catch (e) {
       print('❌ Login error: $e');
-      setState(() {
-        _isLoading = false;
-      });
+      if (!mounted) return;
+      setState(() => _isLoading = false);
 
       String errorMessage = e.toString();
       if (errorMessage.startsWith('Exception: ')) {
@@ -228,66 +200,18 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-      await authProvider.signInWithGoogle(_selectedRole);
+      await authProvider.signInWithGoogle();
 
-      final user = authProvider.user;
-      if (user != null) {
-        // Auto-fill form dengan data user dari Firestore
-        _usernameController.text = user.username;
-        _passwordController.text = '••••••••'; // Placeholder password
-
-        // Set role dropdown sesuai role user
-        if (user.role == 'Pengguna') {
-          _selectedRole = 'Pengguna';
-        } else if (user.role == 'Pemilik Resto') {
-          _selectedRole = 'Pemilik Resto';
-        } else if (user.role == 'Admin') {
-          _selectedRole = 'Admin';
-        }
-
-        // Show filled form briefly (500ms)
-        setState(() {
-          _isLoading = false;
-        });
-
-        await Future.delayed(const Duration(milliseconds: 500));
-
-        // Show loading again
-        setState(() {
-          _isLoading = true;
-        });
-
-        await Future.delayed(const Duration(milliseconds: 800));
-
-        // Navigate based on role
-        final actualRole = user.role;
-        if (actualRole == 'Pengguna') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const HomeScreen()),
-          );
-        } else if (actualRole == 'Pemilik Resto') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const OwnerHomeScreen()),
-          );
-        } else if (actualRole == 'Admin') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const AdminHomeScreen()),
-          );
-        } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const HomeScreen()),
-          );
-        }
+      if (!mounted) return;
+      if (authProvider.user != null) {
+        _navigateToRole(authProvider.user!.role);
+      } else {
+        setState(() => _isLoading = false);
       }
     } catch (e) {
       print('❌ Google Login error: $e');
-      setState(() {
-        _isLoading = false;
-      });
+      if (!mounted) return;
+      setState(() => _isLoading = false);
 
       String errorMessage = e.toString();
       if (errorMessage.startsWith('Exception: ')) {
@@ -296,6 +220,28 @@ class _LoginScreenState extends State<LoginScreen> {
 
       _showErrorDialog('Google Login Gagal', errorMessage);
     }
+  }
+
+  void _navigateToRole(String? role) {
+    final Widget destination;
+    switch (role) {
+      case 'Pengguna':
+        destination = const HomeScreen();
+        break;
+      case 'Pemilik Resto':
+        destination = const OwnerHomeScreen();
+        break;
+      case 'Admin':
+        destination = const AdminHomeScreen();
+        break;
+      default:
+        throw Exception('Role akun tidak valid. Hubungi administrator.');
+    }
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => destination),
+    );
   }
 
   @override
@@ -405,70 +351,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             }
                             return null;
                           },
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        // Login as Dropdown
-                        Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: AppColors.primaryOrange,
-                              width: 2,
-                            ),
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          child: DropdownButtonFormField<String>(
-                            value: _selectedRole,
-                            decoration: InputDecoration(
-                              hintText: 'Login as',
-                              hintStyle: TextStyle(color: Colors.grey[400]),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 12,
-                              ),
-                              border: InputBorder.none,
-                            ),
-                            icon: Icon(
-                              Icons.arrow_drop_down,
-                              color: AppColors.primaryOrange,
-                            ),
-                            dropdownColor: Colors.white,
-                            items: [
-                              DropdownMenuItem(
-                                value: 'Pengguna',
-                                child: Text(
-                                  'Pengguna',
-                                  style: TextStyle(
-                                    color: AppColors.primaryOrange,
-                                  ),
-                                ),
-                              ),
-                              DropdownMenuItem(
-                                value: 'Pemilik Resto',
-                                child: Text(
-                                  'Pemilik Resto',
-                                  style: TextStyle(
-                                    color: AppColors.primaryOrange,
-                                  ),
-                                ),
-                              ),
-                              DropdownMenuItem(
-                                value: 'Admin',
-                                child: Text(
-                                  'Admin',
-                                  style: TextStyle(
-                                    color: AppColors.primaryOrange,
-                                  ),
-                                ),
-                              ),
-                            ],
-                            onChanged: (value) {
-                              setState(() {
-                                _selectedRole = value!;
-                              });
-                            },
-                          ),
                         ),
 
                         const SizedBox(height: 16),

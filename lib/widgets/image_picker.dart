@@ -16,7 +16,8 @@ class ImageLinkInputWidget extends StatefulWidget {
     this.maxImages = 3,
     this.title = 'Link Gambar Restoran',
     this.isRequired = false,
-    this.hintText = 'Masukkan link gambar (pisahkan dengan koma untuk multiple)',
+    this.hintText =
+        'Masukkan link gambar (pisahkan dengan koma untuk multiple)',
   });
 
   @override
@@ -66,9 +67,7 @@ class _ImageLinkInputWidgetState extends State<ImageLinkInputWidget> {
           controller: _linkController,
           decoration: InputDecoration(
             hintText: widget.hintText,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             suffixIcon: IconButton(
               icon: const Icon(Icons.add_link),
               onPressed: _addImageLink,
@@ -129,16 +128,9 @@ class _ImageLinkInputWidgetState extends State<ImageLinkInputWidget> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Contoh link gambar yang bisa digunakan:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 4),
               Text(
-                '• https://example.com/resto1.jpg\n'
-                '• https://picsum.photos/400/300\n'
-                '• https://via.placeholder.com/400x300\n'
-                '• Maksimal ${widget.maxImages} gambar',
+                'Masukkan URL gambar milik restoran Anda. '
+                'Maksimal ${widget.maxImages} gambar.',
                 style: const TextStyle(fontSize: 12),
               ),
             ],
@@ -180,7 +172,7 @@ class _ImageLinkInputWidgetState extends State<ImageLinkInputWidget> {
                       child: CircularProgressIndicator(
                         value: loadingProgress.expectedTotalBytes != null
                             ? loadingProgress.cumulativeBytesLoaded /
-                                loadingProgress.expectedTotalBytes!
+                                  loadingProgress.expectedTotalBytes!
                             : null,
                       ),
                     );
@@ -335,9 +327,7 @@ class _SingleImageLinkInputState extends State<SingleImageLinkInput> {
           controller: _linkController,
           decoration: InputDecoration(
             hintText: widget.hintText,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             suffixIcon: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -358,10 +348,7 @@ class _SingleImageLinkInputState extends State<SingleImageLinkInput> {
 
         // Image Preview
         if (_imageUrl != null && _imageUrl!.isNotEmpty) ...[
-          const Text(
-            'Preview:',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          const Text('Preview:', style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Container(
             height: 150,
@@ -387,7 +374,7 @@ class _SingleImageLinkInputState extends State<SingleImageLinkInput> {
                         child: CircularProgressIndicator(
                           value: loadingProgress.expectedTotalBytes != null
                               ? loadingProgress.cumulativeBytesLoaded /
-                                  loadingProgress.expectedTotalBytes!
+                                    loadingProgress.expectedTotalBytes!
                               : null,
                         ),
                       );
@@ -403,7 +390,11 @@ class _SingleImageLinkInputState extends State<SingleImageLinkInput> {
                       return const Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.broken_image, size: 40, color: Colors.grey),
+                          Icon(
+                            Icons.broken_image,
+                            size: 40,
+                            color: Colors.grey,
+                          ),
                           SizedBox(height: 8),
                           Text('Gambar tidak dapat dimuat'),
                         ],

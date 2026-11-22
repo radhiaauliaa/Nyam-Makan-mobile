@@ -324,6 +324,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen>
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: widget.restaurant.isOpen == true
+<<<<<<< HEAD
                     ? Colors.green.withValues(alpha: 0.1)
                     : Colors.red.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
@@ -331,6 +332,15 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen>
                   color: widget.restaurant.isOpen == true
                       ? Colors.green.withValues(alpha: 0.3)
                       : Colors.red.withValues(alpha: 0.3),
+=======
+                    ? Colors.green.withOpacity(0.1)
+                    : Colors.red.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: widget.restaurant.isOpen == true
+                      ? Colors.green.withOpacity(0.3)
+                      : Colors.red.withOpacity(0.3),
+>>>>>>> BE
                 ),
               ),
               child: Row(
@@ -383,7 +393,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen>
               const SizedBox(width: 8),
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: widget.restaurant.isOpen
+                  onPressed: widget.restaurant.isOpen == true
                       ? () {
                           Navigator.push(
                             context,
@@ -552,7 +562,6 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen>
     );
   }
 
-  // Ulasan (dummy)
   Widget _buildReviewsTab() {
     return Column(
       children: [
@@ -898,32 +907,41 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen>
             Icons.location_on,
           ),
           _buildInfoItem('Telepon', widget.restaurant.phone, Icons.phone),
-          _buildInfoItem(
-            'Jam Buka',
-            '${widget.restaurant.openTime} - ${widget.restaurant.closeTime}',
-            Icons.access_time,
-          ),
+          if (widget.restaurant.openTime.isNotEmpty ||
+              widget.restaurant.closeTime.isNotEmpty)
+            _buildInfoItem(
+              'Jam Buka',
+              [
+                widget.restaurant.openTime,
+                widget.restaurant.closeTime,
+              ].where((time) => time.isNotEmpty).join(' - '),
+              Icons.access_time,
+            ),
           _buildInfoItem(
             'Kategori',
             widget.restaurant.category,
             Icons.category,
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Deskripsi',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            widget.restaurant.description,
-            style: const TextStyle(fontSize: 14, color: Colors.grey),
-          ),
+          if (widget.restaurant.description.isNotEmpty) ...[
+            const Text(
+              'Deskripsi',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              widget.restaurant.description,
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+          ],
         ],
       ),
     );
   }
 
   Widget _buildInfoItem(String title, String value, IconData icon) {
+    if (value.trim().isEmpty) return const SizedBox.shrink();
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(

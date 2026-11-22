@@ -1,7 +1,12 @@
 const { initializeApp } = require("firebase-admin/app");
-const { DocumentReference, GeoPoint, Timestamp, getFirestore } = require("firebase-admin/firestore");
+const {
+  DocumentReference,
+  GeoPoint,
+  Timestamp,
+  getFirestore,
+} = require("firebase-admin/firestore");
 const { HttpsError, onCall } = require("firebase-functions/v2/https");
-const { onSchedule } = require("firebase-functions/v2/scheduler");
+
 
 initializeApp();
 
@@ -182,72 +187,3 @@ function scoreDocument(text, keywords) {
     0,
   );
 }
-
-/**
- * Scheduled cleanup setiap hari jam 00:00 WIB (midnight).
- * Otomatis mendeteksi promo yang sudah expired (endDate < now) dan:
- * 1. Mengubah isActive = false
- * 2. Mengembalikan harga normal pada menu yang terdampak (price = originalPrice, originalPrice = null)
- */
-exports.cleanupExpiredPromos = onSchedule(
-  {
-    schedule: "0 0 * * *",
-    timeZone: "Asia/Jakarta",
-    region: "asia-southeast2",
-  },
-  async (event) => {
-    const now = new Date().toISOString();
-    console.log(`Menjalankan cleanupExpiredPromos pada ${now}`);
-
-    try {
-      const snapshot = await firestore
-        .collection("promos")
-        .where("isActive", "==", true)
-        .where("endDate", "<", now)
-        .get();
-
-      if (snapshot.empty) {
-        console.log("Tidak ada promo aktif yang sudah expired.");
-        return;
-      }
-
-      console.log(`Ditemukan ${snapshot.size} promo expired untuk dinonaktifkan.`);
-
-      for (const doc of snapshot.docs) {
-        const promo = doc.data();
-        const batch = firestore.batch();
-
-        batch.update(doc.ref, {
-          isActive: false,
-          updatedAt: new Date().toISOString(),
-        });
-
-        if (promo.type === "menu" && Array.isArray(promo.menuItems)) {
-          for (const menuId of promo.menuItems) {
-            const menuRef = firestore.collection("menus").doc(menuId);
-            const menuDoc = await menuRef.get();
-            if (menuDoc.exists) {
-              const menuData = menuDoc.data();
-              if (menuData.originalPrice != null) {
-                batch.update(menuRef, {
-                  price: menuData.originalPrice,
-                  originalPrice: null,
-                  activePromoId: null,
-                });
-              } else {
-                batch.update(menuRef, {
-                  activePromoId: null,
-                });
-              }
-            }
-          }
-        }
-
-        await batch.commit();
-        console.log(`Berhasil menonaktifkan promo expired: ${doc.id} (${promo.title})`);
-      }
-    } catch (error) {
-      console.error("Error pada cleanupExpiredPromos:", error);
-    }
-  },
-);

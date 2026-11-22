@@ -54,11 +54,6 @@ class _RestaurantRegisterScreenState extends State<RestaurantRegisterScreen> {
   @override
   void initState() {
     super.initState();
-    // Set default values
-    _openTimeController.text = '08:00';
-    _closeTimeController.text = '22:00';
-    _minPriceController.text = '15000';
-    _maxPriceController.text = '50000';
   }
 
   @override

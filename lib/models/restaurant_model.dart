@@ -38,7 +38,7 @@ class Restaurant {
   final String? qrisImageUrl; // URL gambar QRIS
 
   // Restaurant operation status
-  final bool isOpen; // Status buka/tutup (true = buka, false = tutup)
+  final bool? isOpen;
 
   Restaurant({
     required this.id,
@@ -71,20 +71,10 @@ class Restaurant {
     this.accountNumber,
     this.bankName,
     this.qrisImageUrl,
-    this.isOpen = true, // Default buka
+    this.isOpen,
   });
 
-  // Factory fromMap - PERBAIKI dengan handling yang lebih baik
   factory Restaurant.fromMap(Map<String, dynamic> map) {
-    // Debug: print data yang diterima
-    print('🔍 Restaurant.fromMap received:');
-    print('   id: ${map['id']}');
-    print('   name: ${map['name']}');
-    print('   images: ${map['images']}');
-    print('   images type: ${map['images']?.runtimeType}');
-    print('   imageUrl: ${map['imageUrl']}');
-
-    // Handle images dengan lebih robust
     List<String> images = [];
     if (map['images'] != null) {
       if (map['images'] is List) {
@@ -92,68 +82,61 @@ class Restaurant {
           images = List<String>.from(
             map['images'].map((item) => item.toString()),
           );
-          print('   ✅ Successfully parsed images: $images');
-        } catch (e) {
-          print('   ❌ Error parsing images: $e');
+        } catch (_) {
           images = [];
         }
       }
     }
 
-    // Handle imageUrl fallback
     String? imageUrl = map['imageUrl'];
     if (imageUrl == null && images.isNotEmpty) {
       imageUrl = images.first;
-      print('   🔄 Using first image from images list: $imageUrl');
     }
 
-    // Handle categories
     List<String> categories = [];
     if (map['categories'] != null && map['categories'] is List) {
-      categories = List<String>.from(map['categories']);
+      categories = List<String>.from(
+        map['categories'].map((item) => item.toString()),
+      );
     } else if (map['category'] != null) {
-      // Fallback untuk field category tunggal
       categories = [map['category'].toString()];
     }
 
-    // Handle priceRange
     Map<String, dynamic>? priceRange;
     if (map['priceRange'] != null && map['priceRange'] is Map) {
       priceRange = Map<String, dynamic>.from(map['priceRange']);
-    } else {
-      priceRange = {'min': 25000, 'max': 75000};
     }
 
-    // Handle openingHours
     Map<String, dynamic>? openingHours;
     if (map['openingHours'] != null && map['openingHours'] is Map) {
       openingHours = Map<String, dynamic>.from(map['openingHours']);
-    } else {
-      openingHours = {'open': '08:00', 'close': '22:00'};
     }
 
-    // Extract openTime dan closeTime dari openingHours
-    String openTime = map['openTime'] ?? openingHours['open'] ?? '08:00';
-    String closeTime = map['closeTime'] ?? openingHours['close'] ?? '22:00';
+    final openTime =
+        map['openTime']?.toString() ?? openingHours?['open']?.toString() ?? '';
+    final closeTime =
+        map['closeTime']?.toString() ??
+        openingHours?['close']?.toString() ??
+        '';
 
     return Restaurant(
       id: map['id'] ?? '',
-      name: map['name'] ?? 'Tanpa Nama',
+      name: map['name']?.toString() ?? '',
       address: map['address'] ?? '',
       category: categories.isNotEmpty
           ? categories.first
-          : (map['category'] ?? ''),
-      rating: (map['rating'] ?? 4.9).toDouble(),
-      totalReviews: map['totalReviews'] ?? 1289,
+          : (map['category']?.toString() ?? ''),
+      rating: (map['rating'] as num?)?.toDouble() ?? 0,
+      totalReviews: (map['totalReviews'] as num?)?.toInt() ?? 0,
       distance: (map['distance'] ?? 0.0).toDouble(),
-      estimatedTime: map['estimatedTime'] ?? 10,
-      discount: map['discount'] ?? 40,
+      estimatedTime: (map['estimatedTime'] as num?)?.toInt() ?? 0,
+      discount: (map['discount'] as num?)?.toInt() ?? 0,
       imageUrl: imageUrl,
       phone: map['phone'] ?? '',
       openTime: openTime,
       closeTime: closeTime,
       description: map['description'] ?? '',
-      status: map['status'] ?? 'verified',
+      status: map['status']?.toString() ?? '',
       images: images,
       ownerId: map['ownerId'],
       ownerEmail: map['ownerEmail'],
@@ -165,15 +148,15 @@ class Restaurant {
       license: map['license'],
       createdAt: map['createdAt'] is Timestamp
           ? (map['createdAt'] as Timestamp).toDate()
-          : DateTime.now(),
+          : null,
       updatedAt: map['updatedAt'] is Timestamp
           ? (map['updatedAt'] as Timestamp).toDate()
-          : DateTime.now(),
+          : null,
       accountName: map['accountName'],
       accountNumber: map['accountNumber'],
       bankName: map['bankName'],
       qrisImageUrl: map['qrisImageUrl'],
-      isOpen: map['isOpen'] ?? true, // Default buka jika tidak ada data
+      isOpen: map['isOpen'] is bool ? map['isOpen'] as bool : null,
     );
   }
 
@@ -286,8 +269,8 @@ class Restaurant {
       distance: 0.0,
       estimatedTime: 0,
       discount: 0,
-      openTime: openingHours['open'] ?? '08:00',
-      closeTime: openingHours['close'] ?? '22:00',
+      openTime: openingHours['open'] ?? '',
+      closeTime: openingHours['close'] ?? '',
     );
   }
 
