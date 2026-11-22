@@ -9,11 +9,18 @@ class LocationProvider with ChangeNotifier {
   Position? _currentPosition;
   bool _isLoading = false;
   String? _error;
+  bool _isUsingSimulationLocation = false;
+
+  // Lokasi simulasi untuk emulator atau perangkat yang belum memiliki GPS.
+  // Dapat diganti otomatis saat GPS pengguna berhasil didapatkan.
+  static const double _simulationLatitude = -0.9499;
+  static const double _simulationLongitude = 100.3543;
 
   Position? get currentPosition => _currentPosition;
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get hasLocation => _currentPosition != null;
+  bool get isUsingSimulationLocation => _isUsingSimulationLocation;
 
   // Inisialisasi dan dapatkan lokasi pengguna
   Future<void> initializeLocation() async {
@@ -23,19 +30,80 @@ class LocationProvider with ChangeNotifier {
 
     try {
       _currentPosition = await _locationService.getCurrentPosition();
-      _error = null;
+      if (!_isUsablePosition(_currentPosition)) {
+        _currentPosition = _createSimulationPosition();
+        _isUsingSimulationLocation = true;
+        _error = null;
+      } else if (!_isLikelyIndonesianPosition(_currentPosition)) {
+        _currentPosition = _createSimulationPosition();
+        _isUsingSimulationLocation = true;
+        _error = null;
+      } else {
+        _isUsingSimulationLocation = false;
+        _error = null;
+      }
     } catch (e) {
       _error = e.toString();
       // Jika gagal, coba ambil last known position
       try {
-        _currentPosition = await _locationService.getLastKnownPosition();
+        final lastPosition = await _locationService.getLastKnownPosition();
+        if (_isUsablePosition(lastPosition)) {
+          if (_isLikelyIndonesianPosition(lastPosition)) {
+            _currentPosition = lastPosition;
+            _isUsingSimulationLocation = false;
+          } else {
+            _currentPosition = _createSimulationPosition();
+            _isUsingSimulationLocation = true;
+          }
+        } else {
+          _currentPosition = _createSimulationPosition();
+          _isUsingSimulationLocation = true;
+        }
+        _error = null;
       } catch (e) {
-        print('Failed to get last known position: $e');
+        _currentPosition = _createSimulationPosition();
+        _isUsingSimulationLocation = true;
+        _error = null;
       }
     } finally {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  bool _isUsablePosition(Position? position) {
+    if (position == null) return false;
+    if (position.latitude.abs() < 0.0001 &&
+        position.longitude.abs() < 0.0001) {
+      return false;
+    }
+    return position.latitude >= -90 &&
+        position.latitude <= 90 &&
+        position.longitude >= -180 &&
+        position.longitude <= 180;
+  }
+
+  bool _isLikelyIndonesianPosition(Position? position) {
+    if (position == null) return false;
+    return position.latitude >= -11.0 &&
+        position.latitude <= 6.0 &&
+        position.longitude >= 95.0 &&
+        position.longitude <= 141.0;
+  }
+
+  Position _createSimulationPosition() {
+    return Position(
+      latitude: _simulationLatitude,
+      longitude: _simulationLongitude,
+      timestamp: DateTime.now(),
+      accuracy: 0,
+      altitude: 0,
+      altitudeAccuracy: 0,
+      heading: 0,
+      headingAccuracy: 0,
+      speed: 0,
+      speedAccuracy: 0,
+    );
   }
 
   // Hitung jarak dari lokasi pengguna ke restoran (dalam km)
@@ -60,9 +128,7 @@ class LocationProvider with ChangeNotifier {
     const averageSpeedKmPerHour = 30.0;
     final timeInHours = distanceInKm / averageSpeedKmPerHour;
     final timeInMinutes = (timeInHours * 60).round();
-
-    // Minimal 5 menit, maksimal 120 menit
-    return timeInMinutes.clamp(5, 120);
+    return timeInMinutes < 1 ? 1 : timeInMinutes;
   }
 
   // Update jarak dan waktu untuk restaurant
@@ -71,8 +137,13 @@ class LocationProvider with ChangeNotifier {
       return restaurant;
     }
 
-    final distance = calculateDistanceToRestaurant(restaurant);
-    final time = estimateTravelTime(distance);
+    var distance = calculateDistanceToRestaurant(restaurant);
+    var time = estimateTravelTime(distance);
+
+    if (_isUsingSimulationLocation) {
+      distance = distance.clamp(0.0, 1140.0).toDouble();
+      time = time.clamp(0, 120).toInt();
+    }
 
     // Create new restaurant dengan distance dan time yang updated
     return Restaurant(

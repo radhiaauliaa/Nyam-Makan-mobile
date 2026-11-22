@@ -165,6 +165,10 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen>
               expandedHeight: 200,
               floating: false,
               pinned: true,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: () => Navigator.pop(context),
+              ),
               flexibleSpace: FlexibleSpaceBar(
                 background: Container(
                   decoration: BoxDecoration(
@@ -275,49 +279,35 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen>
             style: const TextStyle(color: Colors.grey, fontSize: 14),
           ),
           const SizedBox(height: 8),
-          if (widget.restaurant.rating > 0 ||
-              widget.restaurant.totalReviews > 0 ||
-              widget.restaurant.discount > 0)
-            Row(
-              children: [
-                if (widget.restaurant.rating > 0 &&
-                    widget.restaurant.totalReviews > 0) ...[
-                  const Icon(
-                    Icons.star,
-                    color: AppColors.primaryOrange,
-                    size: 20,
-                  ),
-                  Text(
-                    '${widget.restaurant.rating}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    ' (${widget.restaurant.totalReviews} ratings)',
-                    style: const TextStyle(color: Colors.grey),
-                  ),
-                ],
-                const Spacer(),
-                if (widget.restaurant.discount > 0)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              if (widget.restaurant.rating > 0 &&
+                  widget.restaurant.totalReviews > 0)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.star,
+                      color: AppColors.primaryOrange,
+                      size: 20,
                     ),
-                    decoration: BoxDecoration(
-                      color: Colors.red[50],
-                      borderRadius: BorderRadius.circular(6),
+                    Text(
+                      '${widget.restaurant.rating}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    child: Text(
-                      'Diskon ${widget.restaurant.discount}%',
-                      style: TextStyle(
-                        color: Colors.red[700],
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
+                    Text(
+                      ' (${widget.restaurant.totalReviews} ratings)',
+                      style: const TextStyle(color: Colors.grey),
                     ),
-                  ),
-              ],
-            ),
+                  ],
+                )
+              else
+                const SizedBox.shrink(),
+              _buildRestaurantPromoBadge(),
+            ],
+          ),
           if (widget.restaurant.isOpen != null) ...[
             const SizedBox(height: 8),
             Container(
@@ -413,6 +403,164 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen>
     );
   }
 
+  Widget _buildRestaurantPromoBadge() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('promos')
+          .where('restaurantId', isEqualTo: widget.restaurant.id)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const SizedBox.shrink();
+
+        final now = DateTime.now();
+        double? bestDiscount;
+
+        for (final doc in snapshot.data!.docs) {
+          final data = doc.data() as Map<String, dynamic>;
+          if (data['isActive'] != true) continue;
+          if (data['endDate'] == null) continue;
+
+          final endDate = data['endDate'] is Timestamp
+              ? (data['endDate'] as Timestamp).toDate()
+              : DateTime.tryParse(data['endDate']?.toString() ?? '');
+          if (endDate != null && !endDate.isAfter(now)) continue;
+
+          final discount = (data['discount'] as num?)?.toDouble();
+          if (discount != null &&
+              discount > 0 &&
+              (bestDiscount == null || discount > bestDiscount)) {
+            bestDiscount = discount;
+          }
+        }
+
+        if (bestDiscount == null) return const SizedBox.shrink();
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.red[50],
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Text(
+            'Diskon ${bestDiscount.toStringAsFixed(bestDiscount % 1 == 0 ? 0 : 1)}%',
+            style: TextStyle(
+              color: Colors.red[700],
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMenuPromoBadge(Menu item) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('promos')
+          .where('restaurantId', isEqualTo: widget.restaurant.id)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const SizedBox.shrink();
+
+        final now = DateTime.now();
+        double? discount;
+
+        for (final doc in snapshot.data!.docs) {
+          final data = doc.data() as Map<String, dynamic>;
+          if (data['isActive'] != true) continue;
+          if (data['endDate'] == null) continue;
+
+          final endDate = data['endDate'] is Timestamp
+              ? (data['endDate'] as Timestamp).toDate()
+              : DateTime.tryParse(data['endDate']?.toString() ?? '');
+          if (endDate != null && !endDate.isAfter(now)) continue;
+
+          final menuIds = data['menuItems'] is List
+              ? List<String>.from(
+                  (data['menuItems'] as List).map((e) => e.toString()),
+                )
+              : <String>[];
+
+          if (menuIds.isNotEmpty && !menuIds.contains(item.id)) continue;
+
+          final promoDiscount = (data['discount'] as num?)?.toDouble();
+          if (promoDiscount != null &&
+              promoDiscount > 0 &&
+              (discount == null || promoDiscount > discount)) {
+            discount = promoDiscount;
+          }
+        }
+
+        final percentage = discount ?? item.discountPercentage;
+        if (percentage <= 0) return const SizedBox.shrink();
+
+        return Container(
+          margin: const EdgeInsets.only(left: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: Colors.red[50],
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            '-${percentage.toStringAsFixed(percentage % 1 == 0 ? 0 : 1)}%',
+            style: TextStyle(
+              color: Colors.red[700],
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMenuRating(Menu item) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('reviews')
+          .where('restaurantId', isEqualTo: widget.restaurant.id)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return Text(
+            '${item.rating.toStringAsFixed(1)} (${item.reviewCount})',
+            style: const TextStyle(fontSize: 12),
+          );
+        }
+
+        double total = 0;
+        int count = 0;
+        for (final doc in snapshot.data!.docs) {
+          final data = doc.data() as Map<String, dynamic>;
+          final selectedMenus = data['selectedMenus'];
+          if (selectedMenus is! List) continue;
+
+          final menuNames = selectedMenus.map((selectedMenu) {
+            if (selectedMenu is Map) {
+              return selectedMenu['name']?.toString();
+            }
+            return selectedMenu.toString();
+          }).whereType<String>();
+
+          if (menuNames.any(
+            (name) => name.trim().toLowerCase() ==
+                item.name.trim().toLowerCase(),
+          )) {
+            total += (data['rating'] as num?)?.toDouble() ?? 0;
+            count++;
+          }
+        }
+
+        final rating = count == 0 ? item.rating : total / count;
+        return Text(
+          '${rating.toStringAsFixed(1)} ($count)',
+          style: const TextStyle(fontSize: 12),
+        );
+      },
+    );
+  }
+
   // 🔥 Menu Tab (pakai MenuService)
   Widget _buildMenuTab() {
     final restaurantId = widget.restaurant.id;
@@ -491,10 +639,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen>
                               color: AppColors.primaryOrange,
                               size: 14,
                             ),
-                            Text(
-                              '${item.rating.toStringAsFixed(1)} (${item.reviewCount})',
-                              style: const TextStyle(fontSize: 12),
-                            ),
+                            _buildMenuRating(item),
                           ],
                         ),
                         const SizedBox(height: 4),
@@ -519,25 +664,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen>
                               ),
                             ),
                             if (item.hasDiscount)
-                              Container(
-                                margin: const EdgeInsets.only(left: 8),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.red[50],
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  'Promo',
-                                  style: TextStyle(
-                                    color: Colors.red[700],
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
+                              _buildMenuPromoBadge(item),
                           ],
                         ),
                       ],

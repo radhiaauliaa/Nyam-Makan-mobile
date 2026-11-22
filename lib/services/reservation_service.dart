@@ -133,8 +133,7 @@ class ReservationService {
     try {
       await _firestore.collection('reservations').doc(reservationId).update({
         'alternativeTime': alternativeTime,
-        'status':
-            'awaiting_payment', // Still approved but with alternative time
+        'status': 'waiting_user_response',
         'updatedAt': FieldValue.serverTimestamp(),
       });
     } catch (e) {
@@ -150,6 +149,7 @@ class ReservationService {
     try {
       await _firestore.collection('reservations').doc(reservationId).update({
         'paymentProofUrl': paymentProofUrl,
+        'status': 'payment_review',
         'updatedAt': FieldValue.serverTimestamp(),
       });
     } catch (e) {

@@ -22,7 +22,7 @@ class Reservation {
   final String? promoTitle;
   final double? discount;
   final String
-  status; // 'pending_review', 'awaiting_payment', 'confirmed', 'rejected', 'completed', 'cancelled'
+  status; // 'pending_review', 'waiting_user_response', 'awaiting_payment', 'payment_review', 'payment_rejected', 'confirmed', 'rejected', 'expired', 'completed', 'cancelled'
   final String? tableGroup;
   final String? tableNumber;
   final String? rejectionReason;
@@ -62,6 +62,21 @@ class Reservation {
   });
 
   factory Reservation.fromMap(Map<String, dynamic> map) {
+    final rawStatus = map['status'] ?? 'pending_review';
+    final paymentProofUrl = map['paymentProofUrl'] as String?;
+    final alternativeTime = map['alternativeTime'] as String?;
+    String status = rawStatus;
+
+    if (status == 'pending') status = 'pending_review';
+    if (status == 'accepted') status = 'confirmed';
+    if (status == 'awaiting_payment') {
+      if (paymentProofUrl != null && paymentProofUrl.isNotEmpty) {
+        status = 'payment_review';
+      } else if (alternativeTime != null && alternativeTime.isNotEmpty) {
+        status = 'waiting_user_response';
+      }
+    }
+
     return Reservation(
       id: map['id'] ?? '',
       userId: map['userId'] ?? '',
@@ -78,17 +93,17 @@ class Reservation {
       totalAmount: (map['totalAmount'] ?? 0.0).toDouble(),
       dpAmount: (map['dpAmount'] ?? 0.0).toDouble(),
       paymentMethod: map['paymentMethod'] ?? 'transfer',
-      paymentProofUrl: map['paymentProofUrl'],
+      paymentProofUrl: paymentProofUrl,
       promoId: map['promoId'],
       promoTitle: map['promoTitle'],
       discount: map['discount'] != null
           ? (map['discount'] as num).toDouble()
           : null,
-      status: map['status'] ?? 'pending_review',
+      status: status,
       tableGroup: map['tableGroup'],
       tableNumber: map['tableNumber'],
       rejectionReason: map['rejectionReason'],
-      alternativeTime: map['alternativeTime'],
+      alternativeTime: alternativeTime,
       paymentVerified: map['paymentVerified'],
       createdAt: (map['createdAt'] as Timestamp).toDate(),
       updatedAt: map['updatedAt'] != null
@@ -138,10 +153,23 @@ class Reservation {
   }
 
   // Status helpers
-  bool get isPendingReview => status == 'pending_review';
-  bool get isAwaitingPayment => status == 'awaiting_payment';
-  bool get isConfirmed => status == 'confirmed';
-  bool get isRejected => status == 'rejected';
+  bool get isPendingReview => status == 'pending_review' || status == 'pending';
+  bool get isWaitingUserResponse =>
+      status == 'waiting_user_response' ||
+      (status == 'awaiting_payment' && alternativeTime != null);
+  bool get isAwaitingPayment =>
+      status == 'awaiting_payment' &&
+      (paymentProofUrl == null || paymentProofUrl!.isEmpty) &&
+      alternativeTime == null;
+  bool get isPaymentReview =>
+      status == 'payment_review' ||
+      (status == 'awaiting_payment' &&
+          paymentProofUrl != null &&
+          paymentProofUrl!.isNotEmpty);
+  bool get isPaymentRejected => status == 'payment_rejected';
+  bool get isConfirmed => status == 'confirmed' || status == 'accepted';
+  bool get isRejected =>
+      status == 'rejected' || status == 'expired' || status == 'cancelled';
   bool get isCompleted => status == 'completed';
   bool get isCancelled => status == 'cancelled';
 
@@ -150,24 +178,36 @@ class Reservation {
   bool get isPending =>
       status == 'pending' ||
       status == 'pending_review' ||
-      status == 'awaiting_payment';
+      status == 'waiting_user_response' ||
+      status == 'awaiting_payment' ||
+      status == 'payment_review' ||
+      status == 'payment_rejected';
   // isAccepted = hanya confirmed (benar-benar sudah diterima/selesai)
   bool get isAccepted => status == 'accepted' || status == 'confirmed';
 
   String get statusLabel {
     switch (status) {
       case 'pending_review':
+      case 'pending':
         return 'Menunggu Persetujuan';
+      case 'waiting_user_response':
+        return 'Menunggu Jawaban Pengguna';
       case 'awaiting_payment':
-        // Jika sudah upload bukti, tampilkan "Menunggu Konfirmasi"
         if (paymentProofUrl != null && paymentProofUrl!.isNotEmpty) {
-          return 'Menunggu Konfirmasi';
+          return 'Cek Pembayaran';
         }
         return 'Menunggu Pembayaran';
+      case 'payment_review':
+        return 'Cek Pembayaran';
+      case 'payment_rejected':
+        return 'Pembayaran Ditolak';
       case 'confirmed':
+      case 'accepted':
         return 'Telah Diterima';
       case 'rejected':
         return 'Ditolak';
+      case 'expired':
+        return 'Kedaluwarsa';
       case 'completed':
         return 'Selesai';
       case 'cancelled':
