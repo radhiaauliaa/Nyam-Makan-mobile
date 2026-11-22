@@ -324,15 +324,6 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen>
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: widget.restaurant.isOpen == true
-<<<<<<< HEAD
-                    ? Colors.green.withValues(alpha: 0.1)
-                    : Colors.red.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: widget.restaurant.isOpen == true
-                      ? Colors.green.withValues(alpha: 0.3)
-                      : Colors.red.withValues(alpha: 0.3),
-=======
                     ? Colors.green.withOpacity(0.1)
                     : Colors.red.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
@@ -340,7 +331,6 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen>
                   color: widget.restaurant.isOpen == true
                       ? Colors.green.withOpacity(0.3)
                       : Colors.red.withOpacity(0.3),
->>>>>>> BE
                 ),
               ),
               child: Row(

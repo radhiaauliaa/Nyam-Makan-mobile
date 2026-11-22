@@ -45,6 +45,14 @@ $databaseContext
 
 Berikan jawaban yang relevan, singkat, dan akurat.
 Gunakan teks biasa tanpa format Markdown atau tanda asterisk untuk penekanan.
+
+Setelah jawaban, tambahkan tepat satu baris pemisah:
+---SUGGESTED_QUESTIONS---
+Kemudian tuliskan array JSON berisi 3 pertanyaan lanjutan yang relevan
+dan bervariasi berdasarkan pertanyaan serta jawaban di atas.
+Pertanyaan harus bisa dikirim langsung oleh pengguna, pendek, dan tidak
+mengulang pertanyaan yang sama. Contoh format:
+["Cari promo makanan murah", "Lihat restoran terdekat", "Cek reservasi saya"]
 ''';
   }
 }
