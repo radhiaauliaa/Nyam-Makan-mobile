@@ -1,11 +1,11 @@
 {
-    "name": "nyam_makaaan2",
-    "short_name": "nyam_makaaan2",
+    "name": "Nyam! Makaan",
+    "short_name": "Nyam! Makaan",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Temukan menu, restoran, promo, dan reservasi terbaik.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

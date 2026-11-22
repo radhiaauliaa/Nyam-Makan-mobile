@@ -16,7 +16,7 @@
     <uses-permission android:name="android.permission.INTERNET"/>
 
     <application
-        android:label="nyam_makaaan2"
+        android:label="Nyam! Makaan"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
