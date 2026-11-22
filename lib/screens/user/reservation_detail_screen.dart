@@ -60,11 +60,19 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
             const SizedBox(height: 20),
 
             // Action Buttons berdasarkan status
-            if (widget.reservation.status == 'awaiting_payment' &&
-                widget.reservation.paymentProofUrl == null)
+            if (widget.reservation.status == 'waiting_user_response' ||
+                (widget.reservation.status == 'awaiting_payment' &&
+                    widget.reservation.alternativeTime != null &&
+                    widget.reservation.paymentProofUrl == null))
+              _buildAlternativeTimeActions(),
+            if ((widget.reservation.status == 'awaiting_payment' ||
+                    widget.reservation.status == 'payment_rejected') &&
+                (widget.reservation.paymentProofUrl == null ||
+                    widget.reservation.status == 'payment_rejected'))
               _buildPaymentButton(),
 
-            if (widget.reservation.status == 'awaiting_payment' &&
+            if ((widget.reservation.status == 'awaiting_payment' ||
+                    widget.reservation.status == 'payment_review') &&
                 widget.reservation.paymentProofUrl != null)
               _buildPaymentProofStatus(),
           ],
@@ -81,19 +89,58 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
 
     switch (widget.reservation.status) {
       case 'pending_review':
+      case 'pending':
         statusColor = AppColors.primaryOrange;
         statusIcon = Icons.access_time;
         statusText = 'Menunggu Review';
         statusDescription =
             'Restoran sedang mereview permintaan reservasi Anda';
         break;
+      case 'waiting_user_response':
+        statusColor = AppColors.primaryOrange;
+        statusIcon = Icons.schedule;
+        statusText = 'Menunggu Jawaban Anda';
+        statusDescription =
+            'Restoran menawarkan jam alternatif: ${widget.reservation.alternativeTime ?? '-'}';
+        break;
       case 'awaiting_payment':
-        statusColor = Colors.blue;
+        if (widget.reservation.alternativeTime != null &&
+            widget.reservation.paymentProofUrl == null) {
+          statusColor = AppColors.primaryOrange;
+          statusIcon = Icons.schedule;
+          statusText = 'Menunggu Jawaban Anda';
+          statusDescription =
+              'Restoran menawarkan jam alternatif: ${widget.reservation.alternativeTime}';
+          break;
+        }
+        if (widget.reservation.paymentProofUrl != null &&
+            widget.reservation.paymentProofUrl!.isNotEmpty) {
+          statusColor = AppColors.primaryOrange;
+          statusIcon = Icons.verified_user;
+          statusText = 'Cek Pembayaran';
+          statusDescription =
+              'Bukti pembayaran sudah dikirim. Restoran sedang memverifikasinya.';
+          break;
+        }
+        statusColor = AppColors.primaryOrange;
         statusIcon = Icons.payment;
         statusText = 'Menunggu Pembayaran';
-        statusDescription = widget.reservation.alternativeTime != null
-            ? 'Restoran menawarkan jam alternatif: ${widget.reservation.alternativeTime}. Silakan bayar DP 50% untuk konfirmasi.'
-            : 'Silakan bayar DP 50% untuk mengkonfirmasi reservasi';
+        statusDescription =
+            'Silakan bayar DP 50% untuk mengkonfirmasi reservasi';
+        break;
+      case 'payment_review':
+        statusColor = AppColors.primaryOrange;
+        statusIcon = Icons.verified_user;
+        statusText = 'Cek Pembayaran';
+        statusDescription =
+            'Bukti pembayaran sudah dikirim. Restoran sedang memverifikasinya.';
+        break;
+      case 'payment_rejected':
+        statusColor = Colors.red;
+        statusIcon = Icons.error_outline;
+        statusText = 'Pembayaran Ditolak';
+        statusDescription = widget.reservation.rejectionReason ??
+            'Bukti pembayaran tidak valid. Silakan unggah ulang.';
         break;
       case 'confirmed':
       case 'accepted':
@@ -489,6 +536,82 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
     );
   }
 
+  Widget _buildAlternativeTimeActions() {
+    final reservationProvider =
+        Provider.of<ReservationProvider>(context, listen: false);
+
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.blue.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Waktu alternatif',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${widget.reservation.formattedDate} · ${widget.reservation.alternativeTime ?? '-'}',
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () async {
+                  final success =
+                      await reservationProvider.rejectAlternativeTime(
+                        widget.reservation.id,
+                      );
+                  if (mounted) Navigator.pop(context);
+                  if (!success && mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          reservationProvider.error ?? 'Gagal menolak waktu',
+                        ),
+                      ),
+                    );
+                  }
+                },
+                child: const Text('Tolak Waktu'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: () async {
+                  final success =
+                      await reservationProvider.acceptAlternativeTime(
+                        widget.reservation.id,
+                      );
+                  if (success && mounted) {
+                    Navigator.pop(context);
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryOrange,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Terima Waktu'),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   Widget _buildUploadPaymentButton() {
     if (widget.reservation.paymentProofUrl != null) {
       return Card(
@@ -638,7 +761,11 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
           );
         },
         icon: const Icon(Icons.payment),
-        label: const Text('Bayar DP 50%'),
+        label: Text(
+          widget.reservation.status == 'payment_rejected'
+              ? 'Unggah Ulang Bukti Pembayaran'
+              : 'Bayar DP 50%',
+        ),
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primaryOrange,
           foregroundColor: Colors.white,

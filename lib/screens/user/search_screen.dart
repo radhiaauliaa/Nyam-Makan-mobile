@@ -476,11 +476,36 @@ class _SearchScreenState extends State<SearchScreen> {
           children: [
             // Header untuk budget search
             Container(
-              padding: const EdgeInsets.all(16),
-              color: AppColors.lightOrange,
+              width: double.infinity,
+              margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
+              decoration: BoxDecoration(
+                color: AppColors.lightOrange,
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.account_balance_wallet_outlined,
+                        color: AppColors.primaryOrange,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'PENCARIAN BERDASARKAN HARGA',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryOrange,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
                   Text(
                     _getBudgetTitle(),
                     style: const TextStyle(
@@ -490,10 +515,10 @@ class _SearchScreenState extends State<SearchScreen> {
                     ),
                   ),
                   if (restaurants.isNotEmpty) ...[
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
                     Text(
                       '${restaurants.length} restoran sesuai budget Anda',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                     ),
                   ],
                 ],
@@ -536,11 +561,36 @@ class _SearchScreenState extends State<SearchScreen> {
           children: [
             // Header untuk category search
             Container(
-              padding: const EdgeInsets.all(16),
-              color: Colors.green[50],
+              width: double.infinity,
+              margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
+              decoration: BoxDecoration(
+                color: AppColors.lightOrange,
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.restaurant_menu,
+                        color: AppColors.primaryOrange,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'PENCARIAN BERDASARKAN KATEGORI',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryOrange,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
                   Text(
                     '$categoryName',
                     style: const TextStyle(
@@ -550,10 +600,10 @@ class _SearchScreenState extends State<SearchScreen> {
                     ),
                   ),
                   if (restaurants.isNotEmpty) ...[
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
                     Text(
                       '${restaurants.length} restoran dalam kategori $categoryName',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                     ),
                   ],
                 ],

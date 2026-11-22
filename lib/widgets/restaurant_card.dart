@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/restaurant_model.dart';
 import '../screens/user/restaurant_detail_screen.dart';
 import '../utils/theme.dart';
@@ -16,7 +17,6 @@ class RestaurantCard extends StatelessWidget {
     final totalReviews = restaurant.totalReviews;
     final distance = restaurant.distance;
     final estimatedTime = restaurant.estimatedTime;
-    final discount = restaurant.discount;
 
     return Material(
       color: Colors.transparent,
@@ -103,6 +103,7 @@ class RestaurantCard extends StatelessWidget {
                           fontSize: 12,
                         ),
                       ),
+                    _buildPromoBadge(context),
                     const SizedBox(height: 8),
                     Row(
                       children: [
@@ -119,7 +120,7 @@ class RestaurantCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 12),
                         ],
-                        if (distance > 0) ...[
+                        if (distance >= 0) ...[
                           const Icon(
                             Icons.location_on,
                             color: Colors.grey,
@@ -127,7 +128,9 @@ class RestaurantCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '${distance}km',
+                            distance > 0 && distance < 1
+                                ? '${(distance * 1000).round()} m'
+                                : '${distance.toStringAsFixed(distance > 0 && distance < 10 ? 1 : 0)} km',
                             style: const TextStyle(
                               fontSize: 12,
                               color: Colors.grey,
@@ -135,7 +138,7 @@ class RestaurantCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 12),
                         ],
-                        if (estimatedTime > 0) ...[
+                        if (estimatedTime >= 0) ...[
                           const Icon(
                             Icons.access_time,
                             color: Colors.grey,
@@ -143,7 +146,7 @@ class RestaurantCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '${estimatedTime}min',
+                            '${estimatedTime} min',
                             style: const TextStyle(
                               fontSize: 12,
                               color: Colors.grey,
@@ -152,27 +155,6 @@ class RestaurantCard extends StatelessWidget {
                         ],
                       ],
                     ),
-                    if (discount > 0) ...[
-                      const SizedBox(height: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.lightOrange,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          'Diskon $discount%',
-                          style: const TextStyle(
-                            color: AppColors.darkOrange,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),
@@ -209,6 +191,59 @@ class RestaurantCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildPromoBadge(BuildContext context) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('promos')
+          .where('restaurantId', isEqualTo: restaurant.id)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const SizedBox.shrink();
+
+        final now = DateTime.now();
+        double? bestDiscount;
+
+        for (final doc in snapshot.data!.docs) {
+          final data = doc.data() as Map<String, dynamic>;
+          if (data['isActive'] != true) continue;
+          if (data['endDate'] == null) continue;
+
+          final endDate = data['endDate'] is Timestamp
+              ? (data['endDate'] as Timestamp).toDate()
+              : DateTime.tryParse(data['endDate']?.toString() ?? '');
+          if (endDate != null && !endDate.isAfter(now)) continue;
+
+          final discount = (data['discount'] as num?)?.toDouble();
+          if (discount != null && discount > 0 &&
+              (bestDiscount == null || discount > bestDiscount)) {
+            bestDiscount = discount;
+          }
+        }
+
+        if (bestDiscount == null) return const SizedBox.shrink();
+
+        return Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: AppColors.lightOrange,
+              borderRadius: BorderRadius.circular(5),
+            ),
+            child: Text(
+              'Diskon ${bestDiscount.toStringAsFixed(bestDiscount % 1 == 0 ? 0 : 1)}%',
+              style: const TextStyle(
+                color: AppColors.darkOrange,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

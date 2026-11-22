@@ -294,6 +294,43 @@ class ReservationProvider with ChangeNotifier {
     }
   }
 
+  // User: Accept the alternative time offered by the owner
+  Future<bool> acceptAlternativeTime(String reservationId) async {
+    _error = null;
+    notifyListeners();
+
+    try {
+      await _reservationService.updateReservationStatus(
+        reservationId,
+        'awaiting_payment',
+      );
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // User: Reject the alternative time offered by the owner
+  Future<bool> rejectAlternativeTime(String reservationId) async {
+    _error = null;
+    notifyListeners();
+
+    try {
+      await _reservationService.updateReservationStatus(
+        reservationId,
+        'rejected',
+        reason: 'Pengguna tidak menyetujui waktu alternatif',
+      );
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
   // User: Upload payment proof (after approved)
   Future<bool> uploadPaymentProof(
     String reservationId,
@@ -383,10 +420,10 @@ class ReservationProvider with ChangeNotifier {
           reservationId,
         );
       } else {
-        // Back to awaiting_payment with note
+        // Return to the waiting-user category so the user can replace the proof
         await _reservationService.updateReservationStatus(
           reservationId,
-          'awaiting_payment',
+          'payment_rejected',
           reason: 'Bukti transfer tidak valid, silakan upload ulang',
         );
 
@@ -452,8 +489,17 @@ class ReservationProvider with ChangeNotifier {
   List<Reservation> get pendingReviewReservations =>
       _reservations.where((r) => r.isPendingReview).toList();
 
+  List<Reservation> get waitingUserResponseReservations =>
+      _reservations.where((r) => r.isWaitingUserResponse).toList();
+
   List<Reservation> get awaitingPaymentReservations =>
       _reservations.where((r) => r.isAwaitingPayment).toList();
+
+  List<Reservation> get paymentReviewReservations =>
+      _reservations.where((r) => r.isPaymentReview).toList();
+
+  List<Reservation> get paymentRejectedReservations =>
+      _reservations.where((r) => r.isPaymentRejected).toList();
 
   List<Reservation> get confirmedReservations =>
       _reservations.where((r) => r.isConfirmed).toList();

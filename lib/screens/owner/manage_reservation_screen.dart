@@ -28,7 +28,7 @@ class _ManageReservationScreenState extends State<ManageReservationScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
 
     // Load reservations when screen initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -92,8 +92,9 @@ class _ManageReservationScreenState extends State<ManageReservationScreen>
                   indicatorColor: Colors.white,
                   labelStyle: const TextStyle(fontWeight: FontWeight.bold),
                   tabs: const [
-                    Tab(text: 'Belum Diproses'),
-                    Tab(text: 'Diterima'),
+                    Tab(text: 'Diproses'),
+                    Tab(text: 'Menunggu'),
+                    Tab(text: 'Terkonfirmasi'),
                     Tab(text: 'Ditolak'),
                   ],
                 ),
@@ -129,18 +130,20 @@ class _ManageReservationScreenState extends State<ManageReservationScreen>
                         child: TabBarView(
                           controller: _tabController,
                           children: [
-                            // Tab 1: Belum Diproses (pending_review only)
-                            _buildReservationList(
-                              reservationProvider.pendingReviewReservations,
-                              'pending',
-                            ),
-                            // Tab 2: Diterima (awaiting_payment + confirmed)
+                            _buildReservationList([
+                              ...reservationProvider.pendingReviewReservations,
+                              ...reservationProvider.paymentReviewReservations,
+                            ], 'needs_action'),
                             _buildReservationList([
                               ...reservationProvider
                                   .awaitingPaymentReservations,
-                              ...reservationProvider.confirmedReservations,
-                            ], 'accepted'),
-                            // Tab 3: Ditolak (rejected)
+                              ...reservationProvider.waitingUserResponseReservations,
+                              ...reservationProvider.paymentRejectedReservations,
+                            ], 'waiting_user'),
+                            _buildReservationList(
+                              reservationProvider.confirmedReservations,
+                              'confirmed',
+                            ),
                             _buildReservationList(
                               reservationProvider.rejectedReservations,
                               'rejected',
@@ -183,64 +186,85 @@ class _ManageReservationScreenState extends State<ManageReservationScreen>
     ReservationProvider reservationProvider,
     AuthProvider authProvider,
   ) {
-    // Hitung stats dengan status baru
-    final pendingCount = reservationProvider.pendingReviewReservations.length;
-    final acceptedCount =
+    final needsActionCount =
+        reservationProvider.pendingReviewReservations.length +
+        reservationProvider.paymentReviewReservations.length;
+    final waitingUserCount =
         reservationProvider.awaitingPaymentReservations.length +
+        reservationProvider.waitingUserResponseReservations.length +
+        reservationProvider.paymentRejectedReservations.length;
+    final confirmedCount =
         reservationProvider.confirmedReservations.length;
     final rejectedCount = reservationProvider.rejectedReservations.length;
     final totalCount = reservationProvider.restaurantReservationCount;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(8, 14, 8, 12),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Detail Reservasi',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              'Detail Reservasi',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
               ),
-            ],
+            ),
           ),
-          const SizedBox(height: 12),
-          // // Restaurant name from restaurant provider
-          // Consumer<RestaurantProvider>(
-          //   builder: (context, restaurantProvider, _) {
-          //     if (restaurantProvider.currentRestaurant != null) {
-          //       return Text(
-          //         restaurantProvider.currentRestaurant!.name,
-          //         style: const TextStyle(fontSize: 12, color: Colors.grey),
-          //       );
-          //     }
-          //     return const SizedBox.shrink();
-          //   },
-          // ),
-          // const SizedBox(height: 12),
+          const SizedBox(height: 18),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildStatItem(
-                'Jumlah Reservasi',
-                totalCount.toString(),
-                Colors.blue,
+              Expanded(
+                child: _buildStatItem(
+                  'Total',
+                  totalCount.toString(),
+                  Colors.blue,
+                ),
               ),
-              _buildStatItem(
-                'Reservasi Masuk',
-                pendingCount.toString(),
-                AppColors.primaryOrange,
+              Expanded(
+                child: _buildStatItem(
+                  'Diproses',
+                  needsActionCount.toString(),
+                  AppColors.primaryOrange,
+                ),
               ),
-              _buildStatItem(
-                'Diterima',
-                acceptedCount.toString(),
-                Colors.green,
+              Expanded(
+                child: _buildStatItem(
+                  'Tunggu',
+                  waitingUserCount.toString(),
+                  Colors.blue,
+                ),
               ),
-              _buildStatItem('Ditolak', rejectedCount.toString(), Colors.red),
+              Expanded(
+                child: _buildStatItem(
+                  'Sukses',
+                  confirmedCount.toString(),
+                  Colors.green,
+                ),
+              ),
+              Expanded(
+                child: _buildStatItem(
+                  'Tolak',
+                  rejectedCount.toString(),
+                  Colors.red,
+                ),
+              ),
             ],
           ),
         ],
@@ -248,18 +272,34 @@ class _ManageReservationScreenState extends State<ManageReservationScreen>
     );
   }
 
-  Widget _buildStatItem(String label, String value, Color color) {
+  Widget _buildStatItem(
+    String label,
+    String value,
+    Color color,
+  ) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           value,
           style: TextStyle(
-            fontSize: 18,
+            fontSize: 23,
+            height: 1,
             fontWeight: FontWeight.bold,
             color: color,
           ),
         ),
-        Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 10,
+            color: Colors.grey,
+          ),
+        ),
       ],
     );
   }
@@ -296,23 +336,39 @@ class _ManageReservationScreenState extends State<ManageReservationScreen>
 
     switch (reservation.status) {
       case 'pending_review':
+      case 'pending':
         statusColor = AppColors.primaryOrange;
         statusText = 'Menunggu Review';
         break;
+      case 'waiting_user_response':
+        statusColor = Colors.blue;
+        statusText = 'Menunggu Jawaban Pengguna';
+        break;
       case 'awaiting_payment':
-        // Jika sudah upload bukti, tampilkan "Menunggu Konfirmasi" dengan warna biru
         if (reservation.paymentProofUrl != null &&
             reservation.paymentProofUrl!.isNotEmpty) {
           statusColor = Colors.blue;
-          statusText = 'Menunggu Konfirmasi';
+          statusText = 'Cek Pembayaran';
+        } else if (reservation.alternativeTime != null) {
+          statusColor = Colors.blue;
+          statusText = 'Menunggu Jawaban Pengguna';
         } else {
           statusColor = AppColors.primaryOrange;
           statusText = 'Menunggu Pembayaran';
         }
         break;
+      case 'payment_review':
+        statusColor = Colors.blue;
+        statusText = 'Cek Pembayaran';
+        break;
+      case 'payment_rejected':
+        statusColor = Colors.red;
+        statusText = 'Pembayaran Ditolak';
+        break;
       case 'confirmed':
+      case 'accepted':
         statusColor = Colors.green;
-        statusText = 'Telah Diterima';
+        statusText = 'Terkonfirmasi';
         break;
       case 'rejected':
         statusColor = Colors.red;
@@ -391,6 +447,14 @@ class _ManageReservationScreenState extends State<ManageReservationScreen>
               '${reservation.formattedDate} ${reservation.formattedTime}',
             ),
 
+            if (reservation.tableNumber != null) ...[
+              const SizedBox(height: 2),
+              _buildInfoRow(
+                'Meja',
+                '${reservation.tableGroup ?? '-'} - No. ${reservation.tableNumber}',
+              ),
+            ],
+
             // Menu items (tampilkan 2 pertama)
             if (reservation.menuItems.isNotEmpty) ...[
               const SizedBox(height: 8),
@@ -419,33 +483,6 @@ class _ManageReservationScreenState extends State<ManageReservationScreen>
                 ),
             ],
 
-            // Payment info
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.lightOrange,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Total:',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    'Rp ${reservation.totalAmount.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primaryOrange,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
             // Alternative time if offered
             if (reservation.alternativeTime != null) ...[
               const SizedBox(height: 8),
@@ -470,13 +507,10 @@ class _ManageReservationScreenState extends State<ManageReservationScreen>
               ),
             ],
 
-            if (reservation.tableNumber != null)
-              _buildInfoRow(
-                'Meja',
-                '${reservation.tableGroup} - No. ${reservation.tableNumber}',
-              ),
-
-            if (reservation.rejectionReason != null) ...[
+            if ((reservation.status == 'rejected' ||
+                    reservation.status == 'payment_rejected') &&
+                reservation.rejectionReason != null &&
+                reservation.rejectionReason!.isNotEmpty) ...[
               const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.all(8),
@@ -499,14 +533,65 @@ class _ManageReservationScreenState extends State<ManageReservationScreen>
               ),
             ],
 
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.lightOrange,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Total:',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    'Rp ${reservation.totalAmount.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primaryOrange,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            if (reservation.status == 'confirmed' ||
+                reservation.status == 'accepted') ...[
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: reservation.paymentProofUrl != null &&
+                          reservation.paymentProofUrl!.isNotEmpty
+                      ? () => _showPaymentProof(reservation)
+                      : null,
+                  icon: const Icon(Icons.receipt_long),
+                  label: Text(
+                    reservation.paymentProofUrl != null &&
+                            reservation.paymentProofUrl!.isNotEmpty
+                        ? 'Lihat Bukti Pembayaran'
+                        : 'Tidak Ada Bukti Pembayaran',
+                  ),
+                ),
+              ),
+            ],
+
             const SizedBox(height: 12),
 
             // Action Buttons
-            if (status == 'pending' || status == 'pending_review')
+            if (reservation.status == 'pending' ||
+                reservation.status == 'pending_review')
               _buildPendingActions(reservation),
-            if (status == 'awaiting_payment')
+            if (reservation.status == 'awaiting_payment' ||
+                reservation.status == 'payment_review')
               _buildAwaitingPaymentActions(reservation),
-            if (status == 'confirmed') _buildConfirmedActions(reservation),
+            if (reservation.status == 'confirmed' ||
+                reservation.status == 'accepted')
+              _buildConfirmedActions(reservation),
           ],
         ),
       ),
@@ -604,12 +689,15 @@ class _ManageReservationScreenState extends State<ManageReservationScreen>
     return Column(
       children: [
         if (reservation.paymentProofUrl != null) ...[
-          OutlinedButton.icon(
-            onPressed: () {
-              _showPaymentProof(reservation);
-            },
-            icon: const Icon(Icons.receipt, size: 16),
-            label: const Text('Lihat Bukti Transfer'),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                _showPaymentProof(reservation);
+              },
+              icon: const Icon(Icons.receipt, size: 16),
+              label: const Text('Lihat Bukti Pembayaran'),
+            ),
           ),
           const SizedBox(height: 8),
           Row(
@@ -1371,8 +1459,12 @@ class _ManageReservationScreenState extends State<ManageReservationScreen>
   // Helper methods
   IconData _getStatusIcon(String status) {
     switch (status) {
+      case 'needs_action':
       case 'pending':
         return Icons.access_time;
+      case 'waiting_user':
+        return Icons.person_search;
+      case 'confirmed':
       case 'accepted':
         return Icons.check_circle;
       case 'rejected':
@@ -1384,6 +1476,12 @@ class _ManageReservationScreenState extends State<ManageReservationScreen>
 
   String _getEmptyMessage(String status) {
     switch (status) {
+      case 'needs_action':
+        return 'Tidak ada reservasi yang perlu diproses';
+      case 'waiting_user':
+        return 'Tidak ada reservasi yang menunggu';
+      case 'confirmed':
+        return 'Tidak ada reservasi yang terkonfirmasi';
       case 'pending':
         return 'Tidak ada reservasi yang menunggu konfirmasi';
       case 'accepted':
@@ -1397,8 +1495,12 @@ class _ManageReservationScreenState extends State<ManageReservationScreen>
 
   Color _getStatusColor(String status) {
     switch (status) {
+      case 'needs_action':
       case 'pending':
         return AppColors.primaryOrange;
+      case 'waiting_user':
+        return Colors.blue;
+      case 'confirmed':
       case 'accepted':
         return Colors.green;
       case 'rejected':
@@ -1410,6 +1512,12 @@ class _ManageReservationScreenState extends State<ManageReservationScreen>
 
   String _getStatusText(String status) {
     switch (status) {
+      case 'needs_action':
+        return 'Diproses';
+      case 'waiting_user':
+        return 'Menunggu';
+      case 'confirmed':
+        return 'Terkonfirmasi';
       case 'pending':
         return 'Belum Diproses';
       case 'accepted':
@@ -1510,6 +1618,11 @@ class _ReservationDetailScreen extends StatelessWidget {
                   if (reservation.tableNumber != null)
                     _buildDetailRow('Nomor Meja', reservation.tableNumber!),
                   _buildDetailRow('ID Reservasi', reservation.id),
+                  if ((reservation.status == 'rejected' ||
+                          reservation.status == 'payment_rejected') &&
+                      reservation.rejectionReason != null &&
+                      reservation.rejectionReason!.isNotEmpty)
+                    _buildDetailRow('Alasan', reservation.rejectionReason!),
                 ],
               ),
             ),
@@ -1610,6 +1723,49 @@ class _ReservationDetailScreen extends StatelessWidget {
                         ),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: reservation.paymentProofUrl != null &&
+                              reservation.paymentProofUrl!.isNotEmpty
+                          ? () => showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('Bukti Pembayaran'),
+                                  content: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Image.network(
+                                      reservation.paymentProofUrl!,
+                                      fit: BoxFit.contain,
+                                      errorBuilder:
+                                          (context, error, stackTrace) =>
+                                              const Padding(
+                                        padding: EdgeInsets.all(24),
+                                        child: Text(
+                                          'Gambar bukti pembayaran tidak dapat dimuat',
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text('Tutup'),
+                                    ),
+                                  ],
+                                ),
+                              )
+                          : null,
+                      icon: const Icon(Icons.receipt_long),
+                      label: Text(
+                        reservation.paymentProofUrl != null &&
+                                reservation.paymentProofUrl!.isNotEmpty
+                            ? 'Lihat Bukti Pembayaran'
+                            : 'Tidak Ada Bukti Pembayaran',
+                      ),
+                    ),
                   ),
                 ],
               ),

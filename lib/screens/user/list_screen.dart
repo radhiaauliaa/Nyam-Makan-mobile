@@ -360,13 +360,28 @@ class _ListScreenState extends State<ListScreen>
   String _getStatusText(String status) {
     switch (status) {
       case 'pending':
-        return 'DIPROSES';
+      case 'pending_review':
+        return 'Menunggu Review';
+      case 'waiting_user_response':
+        return 'Menunggu Jawaban';
+      case 'awaiting_payment':
+        return 'Menunggu Pembayaran';
+      case 'payment_review':
+        return 'Cek Pembayaran';
+      case 'payment_rejected':
+        return 'Pembayaran Ditolak';
       case 'accepted':
-        return 'DITERIMA';
+      case 'confirmed':
+        return 'Terkonfirmasi';
       case 'rejected':
-        return 'DITOLAK';
+        return 'Ditolak';
+      case 'completed':
+        return 'Selesai';
+      case 'cancelled':
+      case 'expired':
+        return 'Dibatalkan';
       default:
-        return status.toUpperCase();
+        return status;
     }
   }
 
