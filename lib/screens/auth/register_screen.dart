@@ -394,7 +394,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           borderRadius: BorderRadius.circular(30),
                         ),
                         child: DropdownButtonFormField<String>(
-                          value: _selectedRole,
+                          initialValue: _selectedRole,
                           decoration: InputDecoration(
                             hintText: 'Account for',
                             hintStyle: TextStyle(color: Colors.grey[400]),

@@ -7,6 +7,7 @@ const {
 } = require("firebase-admin/firestore");
 const { HttpsError, onCall } = require("firebase-functions/v2/https");
 
+
 initializeApp();
 
 const firestore = getFirestore();

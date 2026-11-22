@@ -91,7 +91,7 @@ class ReportService {
           targetId: restaurantId,
           reportType: ReportModel.typeRestaurantPoorRating,
           reason:
-              'Restoran mendapat rata-rata rating ${avgRating.toStringAsFixed(1)} dari ${reviews.docs.length} ulasan (${lowRatingCount} ulasan buruk)',
+              'Restoran mendapat rata-rata rating ${avgRating.toStringAsFixed(1)} dari ${reviews.docs.length} ulasan ($lowRatingCount ulasan buruk)',
           evidence: {
             'averageRating': avgRating,
             'totalReviews': reviews.docs.length,

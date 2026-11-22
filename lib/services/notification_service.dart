@@ -299,7 +299,7 @@ class NotificationService {
       print('📋 Total admins found: ${allAdmins.docs.length}');
 
       for (var admin in allAdmins.docs) {
-        final adminData = admin.data() as Map<String, dynamic>;
+        final adminData = admin.data();
         print(
           '✉️ Sending notification to admin: ${admin.id} (${adminData['email']})',
         );

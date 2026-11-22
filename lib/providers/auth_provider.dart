@@ -115,7 +115,9 @@ class AuthProvider with ChangeNotifier {
       final userStatus = userData['status'] ?? 'active';
       if (userStatus == 'suspended') {
         // Cek apakah ini pemilik resto yang ditolak
+
         if (storedRole == 'Pemilik Resto') {
+
           // Cari info resto untuk mendapatkan alasan penolakan
           final restoSnapshot = await _firestore
               .collection('restaurants')
@@ -318,8 +320,9 @@ class AuthProvider with ChangeNotifier {
   // providers/auth_provider.dart - tambahkan method ini
   Future<bool> hasRestaurant() async {
     if (_user == null ||
-        (_user!.role != 'owner' && _user!.role != 'Pemilik Resto'))
+        (_user!.role != 'owner' && _user!.role != 'Pemilik Resto')) {
       return false;
+    }
 
     try {
       final querySnapshot = await _firestore

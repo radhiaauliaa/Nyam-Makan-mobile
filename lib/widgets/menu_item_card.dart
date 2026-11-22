@@ -89,9 +89,12 @@ class _MenuItemCardState extends State<MenuItemCard> {
   }
 
   Widget _buildMenuImage() {
-    // PERUBAHAN: Ambil gambar pertama dari list images
-    final String? imageUrl = widget.images.isNotEmpty ? widget.images.first : null;
-    
+    final String? imageUrl = widget.images.isNotEmpty
+        ? widget.images.first
+        : (widget.imageUrl != null && widget.imageUrl!.isNotEmpty
+              ? widget.imageUrl
+              : null);
+
     return Container(
       width: 80,
       height: 80,
@@ -99,10 +102,7 @@ class _MenuItemCardState extends State<MenuItemCard> {
         borderRadius: BorderRadius.circular(8),
         color: Colors.grey[200],
         image: imageUrl != null
-            ? DecorationImage(
-                image: NetworkImage(imageUrl),
-                fit: BoxFit.cover,
-              )
+            ? DecorationImage(image: NetworkImage(imageUrl), fit: BoxFit.cover)
             : null,
       ),
       child: imageUrl == null

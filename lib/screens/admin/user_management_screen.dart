@@ -359,7 +359,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: _getStatusColor(user.status).withOpacity(0.1),
+                    color: _getStatusColor(user.status).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(

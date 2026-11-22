@@ -135,9 +135,9 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: statusColor.withOpacity(0.1),
+        color: statusColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: statusColor.withOpacity(0.3)),
+        border: Border.all(color: statusColor.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -369,12 +369,24 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
   }
 
   Widget _buildPaymentMethod() {
+    String label;
+    switch (widget.reservation.paymentMethod.toLowerCase()) {
+      case 'qris':
+        label = 'QRIS';
+        break;
+      case 'transfer':
+        label = 'Transfer Manual';
+        break;
+      default:
+        label = 'Belum dipilih';
+    }
+
     return Row(
       children: [
         const Icon(Icons.payment, size: 16, color: Colors.grey),
         const SizedBox(width: 8),
         Text(
-          'Metode: ${widget.reservation.paymentMethod.toUpperCase()}',
+          'Metode: $label',
           style: const TextStyle(fontSize: 14, color: Colors.grey),
         ),
       ],

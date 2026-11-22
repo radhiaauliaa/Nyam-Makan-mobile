@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/restaurant_provider.dart';
 import '../../services/menu_service.dart';
+import '../../services/review_service.dart';
 import '../shared/restaurant_map_screen.dart';
 import 'reservation_screen.dart';
 import 'review_screen.dart';
@@ -49,6 +50,12 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    // Sinkronisasi rating & review count di Firestore saat membuka detail resto
+    ReviewService().updateRestaurantRating(widget.restaurant.id).catchError((
+      e,
+    ) {
+      debugPrint('Sync rating error: $e');
+    });
   }
 
   @override
@@ -116,6 +123,11 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen>
                     .collection('reviews')
                     .doc(review['id'])
                     .delete();
+
+                // Recalculate rating & review count di Firestore
+                await ReviewService().updateRestaurantRating(
+                  widget.restaurant.id,
+                );
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -312,6 +324,15 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen>
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: widget.restaurant.isOpen == true
+<<<<<<< HEAD
+                    ? Colors.green.withValues(alpha: 0.1)
+                    : Colors.red.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: widget.restaurant.isOpen == true
+                      ? Colors.green.withValues(alpha: 0.3)
+                      : Colors.red.withValues(alpha: 0.3),
+=======
                     ? Colors.green.withOpacity(0.1)
                     : Colors.red.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
@@ -319,6 +340,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen>
                   color: widget.restaurant.isOpen == true
                       ? Colors.green.withOpacity(0.3)
                       : Colors.red.withOpacity(0.3),
+>>>>>>> BE
                 ),
               ),
               child: Row(
@@ -424,6 +446,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen>
           itemCount: menus.length,
           itemBuilder: (context, index) {
             final item = menus[index];
+            final menuImageUrl = item.mainImage;
 
             return Container(
               margin: const EdgeInsets.only(bottom: 12),
@@ -433,7 +456,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen>
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
+                    color: Colors.grey.withValues(alpha: 0.1),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -448,14 +471,14 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen>
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(8),
                       color: Colors.grey[200],
-                      image: item.imageUrl != null
+                      image: menuImageUrl != null
                           ? DecorationImage(
-                              image: NetworkImage(item.imageUrl!),
+                              image: NetworkImage(menuImageUrl),
                               fit: BoxFit.cover,
                             )
                           : null,
                     ),
-                    child: item.imageUrl == null
+                    child: menuImageUrl == null
                         ? const Icon(Icons.fastfood, color: Colors.grey)
                         : null,
                   ),
@@ -666,8 +689,9 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen>
       if (difference.inDays == 0) return 'Hari ini';
       if (difference.inDays == 1) return '1 hari yang lalu';
       if (difference.inDays < 7) return '${difference.inDays} hari yang lalu';
-      if (difference.inDays < 30)
+      if (difference.inDays < 30) {
         return '${(difference.inDays / 7).floor()} minggu yang lalu';
+      }
       return '${(difference.inDays / 30).floor()} bulan yang lalu';
     }
 
@@ -681,13 +705,13 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen>
     }
 
     // Safe selected menus handling
-    List<dynamic> _getSafeSelectedMenus(dynamic menusValue) {
+    List<dynamic> getSafeSelectedMenus(dynamic menusValue) {
       if (menusValue is List) return menusValue;
       return [];
     }
 
     final rating = _getSafeRating(review['rating']);
-    final selectedMenus = _getSafeSelectedMenus(review['selectedMenus']);
+    final selectedMenus = getSafeSelectedMenus(review['selectedMenus']);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final currentUserId = authProvider.user?.id;
     final isCurrentUserReview = review['userId'] == currentUserId;
@@ -700,7 +724,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen>
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -808,8 +832,9 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen>
                     selectedMenus
                         .map((menu) {
                           if (menu is String) return menu;
-                          if (menu is Map)
+                          if (menu is Map) {
                             return menu['name']?.toString() ?? '';
+                          }
                           return menu.toString();
                         })
                         .join(', '),

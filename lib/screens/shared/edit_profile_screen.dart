@@ -398,7 +398,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             color: AppColors.lightOrange,
             shape: BoxShape.circle,
             border: Border.all(
-              color: AppColors.primaryOrange.withOpacity(0.3),
+              color: AppColors.primaryOrange.withValues(alpha: 0.3),
               width: 2,
             ),
           ),
@@ -655,9 +655,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: roleColor.withOpacity(0.1),
+        color: roleColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: roleColor.withOpacity(0.3)),
+        border: Border.all(color: roleColor.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [

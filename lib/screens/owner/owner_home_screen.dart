@@ -14,6 +14,7 @@ import 'manage_menu_screen.dart';
 import 'manage_reservation_screen.dart';
 import 'view_reviews_screen.dart';
 import 'payment_settings_screen.dart';
+import 'manage_promo_screen.dart';
 import '../../providers/notification_provider.dart';
 import '../../services/fcm_service.dart';
 import '../shared/notifications_screen.dart';
@@ -513,12 +514,12 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withOpacity(0.2),
+                color: Colors.grey.withValues(alpha: 0.2),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
             ],
-            border: Border.all(color: Colors.grey.withOpacity(0.3)),
+            border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -681,7 +682,7 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
               padding: const EdgeInsets.all(8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
-                side: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                side: BorderSide(color: Colors.grey.withValues(alpha: 0.3)),
               ),
             ),
           ),
@@ -704,7 +705,7 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
             style: TextStyle(fontSize: 14, color: Colors.grey[600]),
           ),
           Text(
-            '${parts.sublist(2).join(', ')}',
+            parts.sublist(2).join(', '),
             style: TextStyle(fontSize: 12, color: Colors.grey[500]),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -764,7 +765,7 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             blurRadius: 5,
             offset: const Offset(0, 2),
           ),
@@ -913,6 +914,32 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
                 }
               },
             ),
+            _buildActionButtonNew(
+              context,
+              'Kelola Promo',
+              Icons.local_offer,
+              Colors.amber.shade800,
+              () {
+                final restaurantProvider = Provider.of<RestaurantProvider>(
+                  context,
+                  listen: false,
+                );
+                final restaurant = restaurantProvider.currentRestaurant;
+                if (restaurant != null) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          ManagePromoScreen(restaurant: restaurant),
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Data restoran belum dimuat')),
+                  );
+                }
+              },
+            ),
           ],
         ),
       ],
@@ -930,9 +957,9 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -964,7 +991,7 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             spreadRadius: 0,
             blurRadius: 10,
             offset: const Offset(0, -3),
@@ -1005,7 +1032,7 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
         children: [
           Icon(
             icon,
-            color: isSelected ? Colors.white : Colors.white.withOpacity(0.5),
+            color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.5),
             size: 24,
           ),
           const SizedBox(height: 4),
@@ -1013,7 +1040,7 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
             label,
             style: TextStyle(
               fontSize: 12,
-              color: isSelected ? Colors.white : Colors.white.withOpacity(0.5),
+              color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.5),
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             ),
           ),
@@ -1029,7 +1056,7 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
       decoration: BoxDecoration(
         color: Colors.grey[50],
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withOpacity(0.3)),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

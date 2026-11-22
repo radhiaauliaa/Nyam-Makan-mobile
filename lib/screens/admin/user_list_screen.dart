@@ -203,7 +203,7 @@ class _UserListScreenState extends State<UserListScreen>
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: _getRoleColor(user.role).withOpacity(0.2),
+                  backgroundColor: _getRoleColor(user.role).withValues(alpha: 0.2),
                   child: Icon(Icons.person, color: _getRoleColor(user.role)),
                 ),
                 const SizedBox(width: 12),
@@ -234,7 +234,7 @@ class _UserListScreenState extends State<UserListScreen>
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: _getRoleColor(user.role).withOpacity(0.1),
+                    color: _getRoleColor(user.role).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(

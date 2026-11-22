@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../utils/theme.dart';
 
 class RegistrationSuccessScreen extends StatelessWidget {
-  const RegistrationSuccessScreen({Key? key}) : super(key: key);
+  const RegistrationSuccessScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

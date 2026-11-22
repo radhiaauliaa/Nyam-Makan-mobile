@@ -367,7 +367,7 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
           border: Border.all(color: Colors.grey[300]!),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
+              color: Colors.grey.withValues(alpha: 0.1),
               spreadRadius: 1,
               blurRadius: 3,
               offset: const Offset(0, 1),
@@ -446,7 +446,7 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        '${restaurant.rating.toStringAsFixed(1)}',
+                        restaurant.rating.toStringAsFixed(1),
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,

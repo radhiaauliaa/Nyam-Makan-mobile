@@ -228,7 +228,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
   }) {
     return Card(
       elevation: isSelected ? 4 : 1,
-      color: isSelected ? AppTheme.primaryColor.withOpacity(0.1) : Colors.white,
+      color: isSelected ? AppTheme.primaryColor.withValues(alpha: 0.1) : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
