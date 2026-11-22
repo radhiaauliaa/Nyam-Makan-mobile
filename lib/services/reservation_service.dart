@@ -58,6 +58,25 @@ class ReservationService {
     }
   }
 
+  // Get the total number of restaurant reservations, independent of sort fields.
+  Future<int> getRestaurantReservationCount(String restaurantId) async {
+    try {
+      final countSnapshot = await _firestore
+          .collection('reservations')
+          .where('restaurantId', isEqualTo: restaurantId)
+          .count()
+          .get();
+
+      final count = countSnapshot.count;
+      if (count == null) {
+        throw StateError('Firestore tidak mengembalikan jumlah reservasi.');
+      }
+      return count;
+    } catch (e) {
+      throw Exception('Gagal menghitung reservasi restoran: $e');
+    }
+  }
+
   // Create new reservation
   Future<void> createReservation(Reservation reservation) async {
     try {

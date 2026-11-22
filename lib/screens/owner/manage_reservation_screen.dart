@@ -189,7 +189,7 @@ class _ManageReservationScreenState extends State<ManageReservationScreen>
         reservationProvider.awaitingPaymentReservations.length +
         reservationProvider.confirmedReservations.length;
     final rejectedCount = reservationProvider.rejectedReservations.length;
-    final totalCount = reservationProvider.reservations.length;
+    final totalCount = reservationProvider.restaurantReservationCount;
 
     return Container(
       padding: const EdgeInsets.all(16),

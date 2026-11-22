@@ -10,11 +10,13 @@ class ReservationProvider with ChangeNotifier {
   final NotificationService _notificationService = NotificationService();
 
   List<Reservation> _reservations = [];
+  int _restaurantReservationCount = 0;
   bool _isLoading = false;
   String? _error;
   // Stream<List<Reservation>>? _reservationsStream; // removed unused field
 
   List<Reservation> get reservations => _reservations;
+  int get restaurantReservationCount => _restaurantReservationCount;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -58,12 +60,15 @@ class ReservationProvider with ChangeNotifier {
   Future<void> loadRestaurantReservations(String restaurantId) async {
     _isLoading = true;
     _error = null;
+    _restaurantReservationCount = 0;
     notifyListeners();
 
     try {
       _reservations = await _reservationService.getRestaurantReservations(
         restaurantId,
       );
+      _restaurantReservationCount = await _reservationService
+          .getRestaurantReservationCount(restaurantId);
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -184,6 +189,7 @@ class ReservationProvider with ChangeNotifier {
   // Clear all data
   void clearData() {
     _reservations = [];
+    _restaurantReservationCount = 0;
     _error = null;
     _isLoading = false;
     notifyListeners();
