@@ -352,7 +352,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
             color: AppColors.lightOrange,
             borderRadius: BorderRadius.circular(40),
           ),
-          child: Icon(Icons.person, size: 40, color: AppColors.darkOrange),
+          child: user.profileImage != null && user.profileImage!.isNotEmpty
+              ? ClipOval(
+                  child: Image.network(
+                    user.profileImage!,
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Icon(
+                      Icons.person,
+                      size: 40,
+                      color: AppColors.darkOrange,
+                    ),
+                  ),
+                )
+              : Icon(Icons.person, size: 40, color: AppColors.darkOrange),
         ),
         const SizedBox(width: 16),
         Expanded(
