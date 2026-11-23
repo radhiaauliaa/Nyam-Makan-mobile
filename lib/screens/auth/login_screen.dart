@@ -20,14 +20,45 @@ class _LoginScreenState extends State<LoginScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  bool _isLoading = false;
+  bool _isLoading = true;
   bool _obscurePassword = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _restoreSession();
+  }
 
   @override
   void dispose() {
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _restoreSession() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+    try {
+      final user = await authProvider.restoreSession();
+      if (!mounted) return;
+
+      if (user == null) {
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      _navigateToRole(user.role);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      String errorMessage = e.toString();
+      if (errorMessage.startsWith('Exception: ')) {
+        errorMessage = errorMessage.substring(11);
+      }
+      _showErrorDialog('Gagal Memulihkan Sesi', errorMessage);
+    }
   }
 
   void _showErrorDialog(String title, String message) {

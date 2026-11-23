@@ -34,16 +34,29 @@ class AuthProvider with ChangeNotifier {
   }
 
   // Muat user aktif saat app dibuka / rebuild
-  Future<void> loadCurrentUser() async {
-    final currentUser = _auth.currentUser;
-    if (currentUser == null) return;
+  Future<UserModel?> restoreSession() async {
+    final currentUser = await _auth.authStateChanges().first;
+    if (currentUser == null) {
+      _user = null;
+      return null;
+    }
+
+    return loadCurrentUser(authenticatedUser: currentUser);
+  }
+
+  Future<UserModel?> loadCurrentUser({User? authenticatedUser}) async {
+    final currentUser = authenticatedUser ?? _auth.currentUser;
+    if (currentUser == null) return null;
 
     try {
       final doc = await _firestore
           .collection('users')
           .doc(currentUser.uid)
           .get();
-      if (!doc.exists) return;
+      if (!doc.exists) {
+        _user = null;
+        return null;
+      }
 
       final data = doc.data()!;
       DateTime createdAt;
@@ -79,8 +92,10 @@ class AuthProvider with ChangeNotifier {
       );
 
       notifyListeners();
+      return _user;
     } catch (e) {
       print('Error loading current user: $e');
+      rethrow;
     }
   }
 
@@ -117,7 +132,6 @@ class AuthProvider with ChangeNotifier {
         // Cek apakah ini pemilik resto yang ditolak
 
         if (storedRole == 'Pemilik Resto') {
-
           // Cari info resto untuk mendapatkan alasan penolakan
           final restoSnapshot = await _firestore
               .collection('restaurants')
@@ -246,7 +260,8 @@ class AuthProvider with ChangeNotifier {
           .doc(userCredential.user!.uid)
           .set(user.toMap());
 
-      _user = user;
+      await _auth.signOut();
+      _user = null;
       _isLoading = false;
       notifyListeners();
     } catch (e) {

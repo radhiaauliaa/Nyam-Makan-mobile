@@ -8,7 +8,7 @@ import 'providers/auth_provider.dart';
 import 'providers/restaurant_provider.dart';
 import 'providers/reservation_provider.dart';
 import 'providers/menu_provider.dart';
-import 'screens/shared/splash_screen.dart';
+import 'screens/shared/auth_landing_screen.dart';
 import 'providers/notification_provider.dart';
 import 'providers/promo_provider.dart';
 import 'providers/location_provider.dart';
@@ -23,8 +23,22 @@ void main() async {
   // Untuk testing di Chrome, Firebase tetap dapat digunakan tanpa App Check.
   if (!kIsWeb) {
     await FirebaseAppCheck.instance.activate(
-      androidProvider: AndroidProvider.debug,
+      providerAndroid: const AndroidReCaptchaProvider(
+        '6LfdDi4uAAAAAE616s-7NMop26FxP7pFuFdCaySS',
+      ),
     );
+    try {
+      debugPrint('MULAI TEST APP CHECK');
+
+      final token = await FirebaseAppCheck.instance.getToken();
+
+      debugPrint(
+        'HASIL TEST APP CHECK: '
+        '${token != null ? "BERHASIL" : "TOKEN NULL"}',
+      );
+    } catch (e) {
+      debugPrint('HASIL TEST APP CHECK: GAGAL - $e');
+    }
   }
   await FCMService.initialize();
 
@@ -54,7 +68,7 @@ class MyApp extends StatelessWidget {
           colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primaryOrange),
           useMaterial3: true,
         ),
-        home: const SplashScreen(),
+        home: const AuthLandingScreen(),
       ),
     );
   }
