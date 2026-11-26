@@ -289,7 +289,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 // Logo
                 Image.asset(
                   'assets/logo_cream.png',
-                  height: 88,
+                  height: 70,
                   fit: BoxFit.contain,
                 ),
 

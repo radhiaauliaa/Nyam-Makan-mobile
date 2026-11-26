@@ -207,15 +207,47 @@ class AuthProvider with ChangeNotifier {
         }
       }
     } on FirebaseAuthException catch (e) {
-      _error = e.message;
+      final message = _getLoginAuthErrorMessage(e.code);
+      _error = message;
       _isLoading = false;
       notifyListeners();
-      throw Exception(e.message ?? 'Firebase Auth error');
+      throw Exception(message);
+    } on FirebaseException catch (e) {
+      final message = switch (e.code) {
+        'unavailable' || 'deadline-exceeded' =>
+          'Tidak dapat terhubung ke server. Periksa koneksi internet Anda, lalu coba lagi.',
+        _ => 'Terjadi kendala saat login. Silakan coba lagi beberapa saat.',
+      };
+      _error = message;
+      _isLoading = false;
+      notifyListeners();
+      throw Exception(message);
     } catch (e) {
-      _error = e.toString();
+      final message = e.toString().replaceFirst('Exception: ', '');
+      _error = message;
       _isLoading = false;
       notifyListeners();
-      throw Exception(e.toString());
+      throw Exception(message);
+    }
+  }
+
+  String _getLoginAuthErrorMessage(String code) {
+    switch (code) {
+      case 'invalid-credential':
+      case 'wrong-password':
+        return 'Username atau password yang dimasukkan salah. Periksa kembali lalu coba lagi.';
+      case 'user-not-found':
+        return 'Username tidak ditemukan. Periksa kembali username Anda.';
+      case 'user-disabled':
+        return 'Akun ini dinonaktifkan. Silakan hubungi admin untuk bantuan.';
+      case 'too-many-requests':
+        return 'Terlalu banyak percobaan login. Tunggu beberapa saat sebelum mencoba lagi.';
+      case 'network-request-failed':
+        return 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda, lalu coba lagi.';
+      case 'invalid-email':
+        return 'Format email akun tidak valid. Silakan hubungi admin untuk bantuan.';
+      default:
+        return 'Login gagal. Periksa kembali username dan password Anda, lalu coba lagi.';
     }
   }
 

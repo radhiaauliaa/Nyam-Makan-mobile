@@ -13,13 +13,75 @@ class FirestoreChatbotService {
     'promos',
     'reviews',
     'reservations',
-    'notifications',
-    'reports',
-    'suspensions',
-    'reported_reviews',
   ];
 
-  /// Mengambil seluruh dokumen dari koleksi aplikasi, kecuali `users`.
+  static const _contextFields = {
+    'menus': [
+      'restaurantId',
+      'name',
+      'description',
+      'price',
+      'originalPrice',
+      'category',
+      'isPopular',
+      'rating',
+      'reviewCount',
+      'isAvailable',
+      'tags',
+    ],
+    'restaurants': [
+      'name',
+      'address',
+      'category',
+      'categories',
+      'rating',
+      'totalReviews',
+      'description',
+      'openTime',
+      'closeTime',
+      'openingHours',
+      'isOpen',
+      'priceRange',
+    ],
+    'promos': [
+      'restaurantId',
+      'title',
+      'description',
+      'type',
+      'discount',
+      'minimumOrder',
+      'startDate',
+      'endDate',
+      'isActive',
+      'menuItems',
+    ],
+    'reviews': [
+      'restaurantId',
+      'restaurantName',
+      'rating',
+      'comment',
+      'diningOption',
+      'selectedMenus',
+      'ownerReply',
+      'createdAt',
+    ],
+    'reservations': [
+      'restaurantName',
+      'guestCount',
+      'date',
+      'time',
+      'area',
+      'status',
+      'promoTitle',
+      'alternativeTime',
+      'rejectionReason',
+      'tableGroup',
+      'tableNumber',
+      'createdAt',
+    ],
+  };
+
+  /// Mengambil konteks publik serta reservasi milik pengguna yang sedang login.
   Future<String> getDatabaseContext(String question) async {
     final userId = _auth.currentUser?.uid;
     if (userId == null) {
@@ -44,14 +106,26 @@ class FirestoreChatbotService {
     required String userId,
   }) async {
     final collection = _firestore.collection(collectionName);
-    final snapshot = collectionName == 'reservations'
-        ? await collection.where('userId', isEqualTo: userId).get()
-        : await collection.get();
+    Query<Map<String, dynamic>> query = collection;
+    if (collectionName == 'restaurants') {
+      query = query.where('status', isEqualTo: 'verified');
+    } else if (collectionName == 'promos') {
+      query = query.where('isActive', isEqualTo: true);
+    } else if (collectionName == 'reservations') {
+      query = query.where('userId', isEqualTo: userId);
+    }
+
+    final snapshot = await query.limit(100).get();
+    final fields = _contextFields[collectionName]!;
     final documents = snapshot.docs
         .map((document) {
+          final data = document.data();
           return jsonEncode({
             'documentId': document.id,
-            ..._serializeMap(document.data()),
+            ..._serializeMap({
+              for (final field in fields)
+                if (data.containsKey(field)) field: data[field],
+            }),
           });
         })
         .join('\n');

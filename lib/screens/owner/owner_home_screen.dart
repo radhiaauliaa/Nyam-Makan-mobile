@@ -400,7 +400,7 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
                   borderRadius: BorderRadius.circular(12),
                   child: Image.asset(
                     'assets/nyam_makaan.png',
-                    fit: BoxFit.cover,
+                    fit: BoxFit.contain,
                   ),
                 ),
               ),
