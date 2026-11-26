@@ -245,7 +245,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               // Logo at top
               Image.asset(
                 'assets/nyam_makaan.png',
-                height: 60,
+                height: 50,
                 fit: BoxFit.contain,
               ),
 

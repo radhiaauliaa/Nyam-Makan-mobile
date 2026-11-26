@@ -104,7 +104,7 @@ class _SplashScreenState extends State<SplashScreen>
                           opacity: _logoFadeAnimation.value,
                           child: Image.asset(
                             'assets/nyam_makaan.png',
-                            height: 200,
+                            height: 100,
                             fit: BoxFit.contain,
                           ),
                         ),
@@ -113,7 +113,7 @@ class _SplashScreenState extends State<SplashScreen>
                           opacity: 1.0 - _logoFadeAnimation.value,
                           child: Image.asset(
                             'assets/logo_cream.png',
-                            height: 200,
+                            height: 100,
                             fit: BoxFit.contain,
                           ),
                         ),

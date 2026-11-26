@@ -2,7 +2,7 @@ import 'package:firebase_ai/firebase_ai.dart';
 
 class GeminiService {
   final GenerativeModel _model = FirebaseAI.googleAI().generativeModel(
-    model: 'gemini-3.5-flash-lite',
+    model: 'gemini-3.1-flash-lite',
     generationConfig: GenerationConfig(maxOutputTokens: 1024),
   );
 
