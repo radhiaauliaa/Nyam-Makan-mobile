@@ -23,22 +23,10 @@ void main() async {
   // Untuk testing di Chrome, Firebase tetap dapat digunakan tanpa App Check.
   if (!kIsWeb) {
     await FirebaseAppCheck.instance.activate(
-      providerAndroid: const AndroidReCaptchaProvider(
-        '6LfdDi4uAAAAAE616s-7NMop26FxP7pFuFdCaySS',
-      ),
+      providerAndroid: kDebugMode
+      ? const AndroidDebugProvider()
+      : const AndroidPlayIntegrityProvider(),
     );
-    try {
-      debugPrint('MULAI TEST APP CHECK');
-
-      final token = await FirebaseAppCheck.instance.getToken();
-
-      debugPrint(
-        'HASIL TEST APP CHECK: '
-        '${token != null ? "BERHASIL" : "TOKEN NULL"}',
-      );
-    } catch (e) {
-      debugPrint('HASIL TEST APP CHECK: GAGAL - $e');
-    }
   }
   await FCMService.initialize();
 

@@ -116,10 +116,15 @@ class FirestoreChatbotService {
     }
 
     final snapshot = await query.limit(100).get();
+    final now = DateTime.now();
     final fields = _contextFields[collectionName]!;
     final documents = snapshot.docs
         .map((document) {
           final data = document.data();
+          if (collectionName == 'promos' &&
+              !_isPromoCurrentlyActive(data, now)) {
+            return null;
+          }
           return jsonEncode({
             'documentId': document.id,
             ..._serializeMap({
@@ -128,10 +133,29 @@ class FirestoreChatbotService {
             }),
           });
         })
+        .whereType<String>()
         .join('\n');
 
     return 'KOLEKSI $collectionName:\n'
         '${documents.isEmpty ? '(kosong)' : documents}';
+  }
+
+  bool _isPromoCurrentlyActive(Map<String, dynamic> data, DateTime now) {
+    if (data['isActive'] != true) return false;
+
+    final startDate = _parseDate(data['startDate']);
+    final endDate = _parseDate(data['endDate']);
+    return startDate != null &&
+        endDate != null &&
+        now.isAfter(startDate) &&
+        now.isBefore(endDate);
+  }
+
+  DateTime? _parseDate(dynamic value) {
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    if (value is String) return DateTime.tryParse(value);
+    return null;
   }
 
   Map<String, dynamic> _serializeMap(Map<String, dynamic> data) {
